@@ -20,7 +20,7 @@ export default function StartScreen() {
     const timer = setTimeout(() => {
       if (!completed) {
         setCompleted(true);
-        router.push("/Screens/Login");
+        router.push("/Screens/CreateAccount");
       }
     }, 3000);
     return () => clearTimeout(timer);
@@ -49,7 +49,7 @@ export default function StartScreen() {
             duration: 200,
             useNativeDriver: false,
           }).start();
-          router.push("/Screens/Login");
+          router.push("/Screens/CreateAccount");
         } else {
           Animated.spring(slideAnim, {
             toValue: 0,
@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 30,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
     backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -143,8 +143,21 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  subtitle: { fontSize: 26, fontWeight: "700", textAlign: "center", color: "#333", marginBottom: 15 },
-  description: { fontSize: 18, fontWeight: "500", textAlign: "center", color: "#949494", marginBottom: 30, lineHeight: 24 },
+  subtitle: { 
+    fontSize: 26, 
+    fontWeight: "700", 
+    textAlign: "center", 
+    color: "#333", 
+    marginBottom: 15 
+  },
+  description: { 
+    fontSize: 20, 
+    fontWeight: "600", 
+    textAlign: "center", 
+    color: "#949494", 
+    marginBottom: 30, 
+    lineHeight: 24 
+  },
   sliderContainer: {
     borderRadius: BUTTON_HEIGHT / 2,
     justifyContent: "center",
