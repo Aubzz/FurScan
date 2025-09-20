@@ -20,7 +20,7 @@ export default function StartScreen() {
     const timer = setTimeout(() => {
       if (!completed) {
         setCompleted(true);
-        router.push("/Screens/CreateAccount");
+        router.push("../Screens/CreateAccount.tsx");
       }
     }, 3000);
     return () => clearTimeout(timer);
@@ -49,7 +49,7 @@ export default function StartScreen() {
             duration: 200,
             useNativeDriver: false,
           }).start();
-          router.push("/Screens/CreateAccount");
+          router.push("../Screens/CreateAccount.tsx");
         } else {
           Animated.spring(slideAnim, {
             toValue: 0,
