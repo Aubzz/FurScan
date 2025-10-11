@@ -1,5 +1,5 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   Image,
@@ -9,9 +9,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Colors = {
   background: '#FFFFFF',
@@ -25,18 +26,25 @@ const Colors = {
 
 const API_URL = Platform.select({
   web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080',
+  default: 'http://10.151.237.144:8080', // IMPORTANT: Replace with your computer's IP
 });
 
-
 const HomeScreen = () => {
-  const user = useLocalSearchParams();
+  const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const getProfileImageUrl = () => {
-    const path = user.profileImagePath as string;
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
+    if (!user) {
+      return null;
+    }
+    const path = user.profile_image_path || user.profileImagePath;
+    if (!path) {
+      return null;
+    }
+    if (path.startsWith('http')) {
+      return path;
+    }
     return `${API_URL}/${path.replace(/\\/g, '/')}`;
   };
 
@@ -47,10 +55,10 @@ const HomeScreen = () => {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
       <View style={styles.content}>
-        {/* HeSear Section */}
+        {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.logoText}>Furemedy</Text>
-          <TouchableOpacity onPress={() => console.log('Profile Tapped')}>
+          <TouchableOpacity onPress={() => router.push('/profile')}>
             {profileImageUrl ? (
               <Image
                 source={{ uri: profileImageUrl }}
@@ -94,9 +102,8 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      {/* --- MODIFICATION: The navBar structure is now fixed --- */}
+      {/* Bottom Navigation Bar */}
       <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
-        {/* Left two buttons */}
         <TouchableOpacity style={styles.navButton}>
           <MaterialCommunityIcons name="paw" size={26} color={Colors.primaryOrange} />
           <Text style={[styles.navText, styles.navTextActive]}>My Pets</Text>
@@ -106,20 +113,17 @@ const HomeScreen = () => {
           <Text style={styles.navText}>Chatbot</Text>
         </TouchableOpacity>
         
-        {/* INVISIBLE SPACER: This takes up the middle spot to fix the layout */}
         <View style={styles.navButton} />
 
-        {/* Right two buttons */}
         <TouchableOpacity style={styles.navButton}>
           <Feather name="search" size={26} color={Colors.textSecondary} />
           <Text style={styles.navText}>Search</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
+        <TouchableOpacity style={styles.navButton} onPress={() => router.push('/profile')}>
           <Feather name="user" size={26} color={Colors.textSecondary} />
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
         
-        {/* The actual scan button FLOATS on top, positioned relative to the navBar */}
         <TouchableOpacity style={[styles.scanButton, { bottom: 25 + insets.bottom }]}>
           <Ionicons name="scan-outline" size={30} color={Colors.primaryOrange} />
         </TouchableOpacity>
@@ -141,6 +145,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        // --- THIS IS THE MODIFICATION ---
+        paddingTop: 10, // Add this line to create space above the header
         paddingBottom: 20,
     },
     logoText: {
@@ -208,13 +214,13 @@ const styles = StyleSheet.create({
     },
     navBar: {
         flexDirection: 'row',
-        height: 70, // Fixed height for the main content area
+        height: 70,
         borderTopWidth: 1,
         borderTopColor: '#E0E0E0',
         backgroundColor: Colors.white,
     },
     navButton: {
-        flex: 1, // Each of the 5 items (4 visible, 1 spacer) takes up equal width
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -229,10 +235,8 @@ const styles = StyleSheet.create({
     },
     scanButton: {
         position: 'absolute',
-        // --- MODIFICATION: Center the button horizontally ---
-        left: '50%', // Start at the halfway point
-        marginLeft: -30, // Shift left by half its own width (60 / 2)
-        // Vertical position is still dynamic
+        left: '50%',
+        marginLeft: -30,
         width: 60,
         height: 60,
         borderRadius: 30,
