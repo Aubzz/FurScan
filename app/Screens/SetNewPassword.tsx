@@ -29,7 +29,7 @@ const Colors = {
 
 const API_URL = Platform.select({
   web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080', // Replace with your IP
+  default: 'http://192.168.1.498080', // Replace with your IP
 });
 
 const SetNewPasswordScreen = () => {

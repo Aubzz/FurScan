@@ -1,20 +1,8 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import React from 'react';
-import {
-  Image,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft, Cat, Image, MessageSquare, PawPrint, Scan, Search, User, Zap } from 'lucide-react';
+import { useState } from 'react';
 
+// --- Custom Color Constants based on the React Native snippet ---
 const Colors = {
-  background: '#FFFFFF',
   primaryOrange: '#F7924A',
   lightOrange: '#FDEFE5',
   textPrimary: '#333333',
@@ -23,225 +11,202 @@ const Colors = {
   borderColor: '#E0E0E0',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080',
-});
+// --- Component Fragments ---
+
+// Action Bar (Upload/Capture/Detected) - Styles updated to match new scheme
+interface ActionBarProps {
+  isDetected: boolean;
+  onCaptureClick: () => void;
+  onUploadClick: () => void;
+}
+const ActionBar = ({ isDetected, onCaptureClick, onUploadClick }: ActionBarProps) => (
+  <div className="flex items-center justify-between px-10 py-4 w-full">
+    
+    {/* Upload Photo Button */}
+    <div 
+      className="flex flex-col items-center text-white cursor-pointer"
+      onClick={onUploadClick}
+    >
+      <div className="p-3 bg-black/20 backdrop-blur-sm rounded-xl transition duration-150 active:scale-95">
+        <Image size={24} />
+      </div>
+      <span className="text-sm mt-1 font-medium">Upload Photo</span>
+    </div>
+
+    {/* Main Capture Button */}
+    <button 
+      className="w-16 h-16 rounded-full border-4 border-white bg-white/30 backdrop-blur-sm shadow-xl transition duration-200 ease-in-out hover:bg-white/50 active:scale-90"
+      onClick={onCaptureClick}
+      aria-label="Capture Photo"
+    >
+      <div className="w-14 h-14 bg-white rounded-full mx-auto"></div>
+    </button>
+    
+    {/* Detected Status */}
+    <div className="flex flex-col items-center text-white cursor-default">
+      <div className={`p-3 rounded-xl transition duration-150 ${isDetected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-black/20 backdrop-blur-sm'}`}>
+        <Cat size={24} />
+      </div>
+      <span className="text-sm mt-1 font-medium">{isDetected ? 'Detected: Cat' : 'Detecting...'}</span>
+    </div>
+  </div>
+);
+
+// Navigation Item - Styles updated to match new scheme
+interface NavItemProps {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  isActive: boolean;
+}
+const NavItem = ({ icon: Icon, label, isActive }: NavItemProps) => (
+  <div className={`flex flex-col items-center justify-center p-2 w-1/5 cursor-pointer transition-colors ${isActive ? 'text-[--primary-orange]' : 'text-[--text-secondary] hover:text-[--primary-orange]/80'}`}>
+    <Icon size={26} className="mb-0.5" />
+    <span className={`text-[10px] font-medium mt-1 ${isActive ? 'font-bold' : ''}`}>{label}</span>
+  </div>
+);
 
 
-const HomeScreen = () => {
-  const user = useLocalSearchParams();
-  const insets = useSafeAreaInsets();
+// Main Screen Component 
+const App = () => {
+  // State to simulate UI interaction
+  const [isDetected] = useState(true);
 
-  const getProfileImageUrl = () => {
-    const path = user.profileImagePath as string;
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${API_URL}/${path.replace(/\\/g, '/')}`;
+  const handleCapture = () => {
+    console.log('Capture Clicked - Triggering Camera...');
+  };
+  
+  const handleUpload = () => {
+    console.log('Upload Clicked - Opening File Picker...');
   };
 
-  const profileImageUrl = getProfileImageUrl();
-  
+  // Define CSS variables for custom colors
+  const styleVariables = {
+    '--primary-orange': Colors.primaryOrange,
+    '--light-orange': Colors.lightOrange,
+    '--text-primary': Colors.textPrimary,
+    '--text-secondary': Colors.textSecondary,
+    '--border-color': Colors.borderColor,
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+    // Outer Container for web responsiveness
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center font-sans p-4" style={styleVariables as React.CSSProperties}>
+      {/* Simulated Phone Screen Container for Context */}
+      <div className="w-full max-w-sm h-[85vh] max-h-[900px] bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col transform transition-transform duration-300">
+        
+        {/* --- Header Section (White Background, Orange Logo) --- */}
+        <div className="bg-white px-5 pt-6 pb-2 sticky top-0 z-50 shadow-sm border-b border-[--border-color]">
+          <div className="flex items-center justify-between">
+            {/* Left Icon (Placeholder for Back/Menu) */}
+            <ArrowLeft size={24} className="text-[--text-primary] cursor-pointer" />
+            
+            {/* Logo Text - Styled like Furemedy in RN snippet */}
+            <h1 className="text-3xl font-extrabold tracking-wide text-[--primary-orange]">Dermapaw</h1>
+            
+            {/* Right Icon (Placeholder for Profile) */}
+            <User size={24} className="text-[--text-secondary] cursor-pointer" />
+          </div>
 
-      <View style={styles.content}>
-        {/* HeSear Section */}
-        <View style={styles.header}>
-          <Text style={styles.logoText}>Furemedy</Text>
-          <TouchableOpacity onPress={() => console.log('Profile Tapped')}>
-            {profileImageUrl ? (
-              <Image
-                source={{ uri: profileImageUrl }}
-                style={styles.profileImage}
+          {/* --- Search Bar Section --- */}
+          <div className="flex items-center bg-[--light-orange] rounded-full px-4 py-3 mt-4 mb-2">
+            <Search size={20} className="text-[--text-secondary]" />
+            <input
+              type="text"
+              placeholder="Search here"
+              className="flex-1 ml-3 text-base bg-transparent outline-none placeholder-[--text-secondary]"
+            />
+          </div>
+        </div>
+        
+        {/* Main Camera/Content View (flex-grow fills the space) */}
+        {/* Changed background to dark for a better camera simulator experience */}
+        <div className="flex-grow flex flex-col bg-gray-900 relative">
+          
+          {/* Flash Icon (Top Right) */}
+          <div className="absolute top-4 right-4 p-2 bg-gray-700/50 hover:bg-gray-600/70 backdrop-blur-sm rounded-full cursor-pointer z-20 transition-colors">
+            <Zap size={20} className="text-white" />
+          </div>
+
+          {/* Instructions Block (Center Top) */}
+          <div className="p-6 text-center z-10">
+            <h2 className="text-2xl font-bold text-white mb-2">Scan Pet Skin</h2>
+            <p className="text-gray-300 text-sm">
+              Place your pet's skin inside the frame. Please keep your device steady...
+            </p>
+          </div>
+
+          {/* Camera View Area and Scanning Frame */}
+          <div className="flex-grow flex items-center justify-center p-4 relative overflow-hidden">
+            
+            {/* Background Image Placeholder */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 opacity-90 z-0"></div>
+            
+            {/* Scanning Frame Overlay */}
+            <div className="relative w-full h-full max-w-[80%] max-h-[80%]">
+              {/* Corner Brackets: Using primary orange for highlight */}
+              <div className="absolute top-0 left-0 w-1/4 h-1/4 border-t-8 border-l-8 border-[--primary-orange] rounded-tl-xl shadow-[0_0_15px_rgba(247,146,74,0.6)] z-10"></div>
+              <div className="absolute top-0 right-0 w-1/4 h-1/4 border-t-8 border-r-8 border-[--primary-orange] rounded-tr-xl shadow-[0_0_15px_rgba(247,146,74,0.6)] z-10"></div>
+              <div className="absolute bottom-0 left-0 w-1/4 h-1/4 border-b-8 border-l-8 border-[--primary-orange] rounded-bl-xl shadow-[0_0_15px_rgba(247,146,74,0.6)] z-10"></div>
+              <div className="absolute bottom-0 right-0 w-1/4 h-1/4 border-b-8 border-r-8 border-[--primary-orange] rounded-br-xl shadow-[0_0_15px_rgba(247,146,74,0.6)] z-10"></div>
+
+              {/* Central Pet Focus Image */}
+              <img 
+                src="https://placehold.co/200x300/e9a37c/333333?text=Pet+Focus" 
+                alt="Pet being scanned" 
+                className="absolute inset-0 m-auto max-h-[80%] w-auto object-cover rounded-xl shadow-2xl z-10 transition-transform duration-500 ease-in-out"
+                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "https://placehold.co/200x300/e9a37c/333333?text=Pet+Focus";
+                }}
               />
-            ) : (
-              <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
-                <Feather name="user" size={24} color={Colors.textSecondary} />
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
 
-        {/* Search Bar Section */}
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color={Colors.textSecondary} />
-          <TextInput
-            placeholder="Search here"
-            placeholderTextColor={Colors.textSecondary}
-            style={styles.searchInput}
+              {/* The Central Highlighted Scanner Icon */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 p-2 bg-[--primary-orange] rounded-full shadow-xl shadow-[--primary-orange]/50 z-20">
+                <Scan size={20} className="text-white transform rotate-90" />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Bar (Upload/Capture/Detection Status) */}
+          <ActionBar 
+            isDetected={isDetected} 
+            onCaptureClick={handleCapture}
+            onUploadClick={handleUpload}
           />
-        </View>
+        </div>
 
-        {/* My Pets Header Section */}
-        <View style={styles.myPetsHeader}>
-          <Text style={styles.myPetsTitle}>My Pets</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => console.log('Add Pet Tapped')}
+        {/* --- Bottom Navigation Bar (Floating Scan Button) --- */}
+        <div className="relative">
+          <div 
+            className="flex justify-around items-start h-20 bg-white border-t border-[--border-color] px-2 pt-3"
+            // Ensure the spacer element is accounted for in the layout
           >
-            <Ionicons name="add" size={24} color={Colors.white} />
-          </TouchableOpacity>
-        </View>
+            {/* Left two buttons */}
+            {/* PawPrint is set to Active state to match the RN HomeScreen example */}
+            <NavItem icon={PawPrint} label="My Pets" isActive={true} /> 
+            <NavItem icon={MessageSquare} label="Chatbot" isActive={false} />
+            
+            {/* Invisible Spacer (Takes up the center slot's width) */}
+            <div className="w-1/5 h-full" aria-hidden="true"></div>
 
-        {/* Empty State - No Pets Found */}
-        <View style={styles.emptyStateContainer}>
-          <MaterialCommunityIcons name="paw" size={80} color={Colors.primaryOrange} />
-          <Text style={styles.emptyStateText}>
-            No pets found. Tap + to add one now.
-          </Text>
-        </View>
-      </View>
+            {/* Right two buttons */}
+            <NavItem icon={Search} label="Search" isActive={false} />
+            <NavItem icon={User} label="Profile" isActive={false} />
+          </div>
 
-      {/* --- MODIFICATION: The navBar structure is now fixed --- */}
-      <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
-        {/* Left two buttons */}
-        <TouchableOpacity style={styles.navButton}>
-          <MaterialCommunityIcons name="paw" size={26} color={Colors.primaryOrange} />
-          <Text style={[styles.navText, styles.navTextActive]}>My Pets</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="chatbubble-ellipses-outline" size={26} color={Colors.textSecondary} />
-          <Text style={styles.navText}>Chatbot</Text>
-        </TouchableOpacity>
-        
-        {/* INVISIBLE SPACER: This takes up the middle spot to fix the layout */}
-        <View style={styles.navButton} />
+          {/* The floating scan button */}
+          <button 
+            className="absolute left-1/2 -top-8 w-16 h-16 rounded-full border-[6px] border-[--light-orange] bg-white flex items-center justify-center shadow-xl transform -translate-x-1/2 transition-all duration-300 hover:scale-[1.05]"
+            onClick={() => console.log('Floating Scan Button Clicked')}
+            aria-label="Start Scanner"
+          >
+            <Scan size={30} className="text-[--primary-orange] transform rotate-90" />
+          </button>
+        </div>
 
-        {/* Right two buttons */}
-        <TouchableOpacity style={styles.navButton}>
-          <Feather name="search" size={26} color={Colors.textSecondary} />
-          <Text style={styles.navText}>Search</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Feather name="user" size={26} color={Colors.textSecondary} />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-        
-        {/* The actual scan button FLOATS on top, positioned relative to the navBar */}
-        <TouchableOpacity style={[styles.scanButton, { bottom: 25 + insets.bottom }]}>
-          <Ionicons name="scan-outline" size={30} color={Colors.primaryOrange} />
-        </TouchableOpacity>
-      </View>
-    </View>
+      </div>
+    </div>
   );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingBottom: 20,
-    },
-    logoText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: Colors.primaryOrange,
-    },
-    profileImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.lightOrange,
-    },
-    profileImagePlaceholder: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: Colors.borderColor,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.lightOrange,
-        borderRadius: 25,
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        marginBottom: 30,
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 10,
-        fontSize: 16,
-        color: Colors.textPrimary,
-    },
-    myPetsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    myPetsTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
-    },
-    addButton: {
-        backgroundColor: Colors.primaryOrange,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emptyStateContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingBottom: 60,
-    },
-    emptyStateText: {
-        marginTop: 15,
-        fontSize: 16,
-        color: Colors.textSecondary,
-        textAlign: 'center',
-    },
-    navBar: {
-        flexDirection: 'row',
-        height: 70, // Fixed height for the main content area
-        borderTopWidth: 1,
-        borderTopColor: '#E0E0E0',
-        backgroundColor: Colors.white,
-    },
-    navButton: {
-        flex: 1, // Each of the 5 items (4 visible, 1 spacer) takes up equal width
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    navText: {
-        fontSize: 10,
-        color: Colors.textSecondary,
-        marginTop: 4,
-    },
-    navTextActive: {
-        color: Colors.primaryOrange,
-        fontWeight: 'bold',
-    },
-    scanButton: {
-        position: 'absolute',
-        // --- MODIFICATION: Center the button horizontally ---
-        left: '50%', // Start at the halfway point
-        marginLeft: -30, // Shift left by half its own width (60 / 2)
-        // Vertical position is still dynamic
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        borderColor: Colors.lightOrange,
-        borderWidth: 6,
-        backgroundColor: Colors.white,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-});
-
-export default HomeScreen;
+export default App;
