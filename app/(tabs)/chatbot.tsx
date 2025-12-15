@@ -26,7 +26,7 @@ const TypingDots = () => {
   );
 };
 
-// Component to render text with bold formatting
+// Component to render text with bold formattingg
 const FormattedText = ({ text }: { text: string }) => {
   const parts = text.split(/(\*\*.*?\*\*)/g);
   
