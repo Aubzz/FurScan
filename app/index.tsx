@@ -27,7 +27,7 @@ const Index = () => {
 
   // 3. If NO token is found, the user is logged out. Redirect to the CreateAccount screen.
   // --- THIS IS THE CHANGE ---
-  return <Redirect href="/Screens/CreateAccount" />;
+  return <Redirect href="/chatbot" />;
 };
 
 export default Index;
