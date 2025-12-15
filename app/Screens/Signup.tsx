@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Colors = {
@@ -31,11 +32,6 @@ const Colors = {
   progressBarInactive: '#EAEAEA',
   asteriskRed: '#FF0000',
 };
-
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080', // Replace with your IP
-});
 
 const securityQuestions = [
   "What was your first pet's name?",

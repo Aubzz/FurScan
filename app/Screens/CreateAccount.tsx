@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -30,10 +31,6 @@ const Colors = {
   borderColor: '#E0E0E0',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080',
-});
 
 const CreateAccount = () => {
   const router = useRouter();

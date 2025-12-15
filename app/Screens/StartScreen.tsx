@@ -3,7 +3,6 @@ import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
   Image,
-  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
 
 const Colors = {
   background: '#FFFFFF',
@@ -22,12 +22,6 @@ const Colors = {
   white: '#FFFFFF',
   borderColor: '#E0E0E0',
 };
-
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080',
-});
-
 
 const HomeScreen = () => {
   const user = useLocalSearchParams();

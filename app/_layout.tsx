@@ -1,6 +1,8 @@
 // In app/_layout.tsx
 
+
 import { Stack } from 'expo-router';
+import React from 'react';
 import { AuthProvider } from '../contexts/AuthContext'; // 1. Import your new AuthProvider
 
 /**
@@ -35,7 +37,8 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/SetNewPassword" />
         <Stack.Screen name="Screens/ForgotPassword" />
         <Stack.Screen name="Screens/Settings" />
-        
+        <Stack.Screen name="Screens/AddPet" />
+        <Stack.Screen name="Screens/ViewPet" />
       </Stack>
     </AuthProvider>
   );

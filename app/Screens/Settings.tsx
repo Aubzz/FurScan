@@ -2,16 +2,16 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // --- Constants ---
@@ -24,11 +24,6 @@ const Colors = {
   separator: '#EFEFEF',
   arrow: '#adb5bd',
 };
-
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080', // Replace with your IP
-});
 
 // --- TYPE DEFINITIONS (THIS IS THE FIX) ---
 

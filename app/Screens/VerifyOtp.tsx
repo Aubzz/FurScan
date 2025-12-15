@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
 
 const Colors = {
   background: '#FFFFFF',
@@ -25,11 +26,6 @@ const Colors = {
   boxBackground: '#F5F5F5',
   error: '#D32F2F',
 };
-
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080', // Replace with your IP
-});
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60; // 60 seconds

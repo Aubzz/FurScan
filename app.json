@@ -44,7 +44,8 @@
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
-      "expo-facebook"
+      "expo-facebook",
+      "expo-image-picker"
     ],
     "experiments": {
       "typedRoutes": true,
