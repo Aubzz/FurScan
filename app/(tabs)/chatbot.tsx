@@ -1,19 +1,18 @@
-import React, { useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
-  Dimensions,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
-import { sendMessage } from "../services/botpressApi";
-
-const { width } = Dimensions.get("window");
+import { resetConversation, sendMessage } from "../services/botpressApi";
 
 // Typing animation
 const TypingDots = () => {
@@ -46,31 +45,66 @@ const FormattedText = ({ text }: { text: string }) => {
   );
 };
 
+// Helper function to extract answer options from a system message
+const extractAnswerOptions = (text: string): string[] => {
+  // Check if it's a question
+  if (!text.includes("?")) {
+    return [];
+  }
+  
+  // Pattern 1: Extract (Option1 / Option2 / Option3) format
+  const parenthesesMatch = text.match(/\(([^)]+)\)/g);
+  if (parenthesesMatch) {
+    for (const match of parenthesesMatch) {
+      const options = match
+        .slice(1, -1) // Remove parentheses
+        .split("/")
+        .map(opt => opt.trim())
+        .filter(opt => opt.length > 0);
+      
+      // Only return if we found valid options (2 or more)
+      if (options.length >= 2) {
+        return options;
+      }
+    }
+  }
+  
+  // Pattern 2: Check for explicit yes/no indicators
+  const yesNoPatterns = [
+    /\(Yes\s*\/\s*No\)/i,
+    /Yes\s*or\s*No/i,
+    /\bYes\b.*\bNo\b/i,
+  ];
+  
+  if (yesNoPatterns.some(pattern => pattern.test(text))) {
+    return ["Yes", "No"];
+  }
+  
+  // Pattern 3: Standalone yes/no questions (Is, Are, Do, Did, Can, Could, Would, Should)
+  const standaloneQuestionStart = /^(Is|Are|Do|Did|Can|Could|Would|Should|Have|Has|Will|Might)\s/i;
+  if (standaloneQuestionStart.test(text.trim())) {
+    return ["Yes", "No"];
+  }
+  
+  return [];
+};
+
 export default function ChatbotScreen() {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
-  const [drawerAnim] = useState(new Animated.Value(width));
   const [loading, setLoading] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
 
-  const suggestions = ["Ringworm", "Hotspots", "Itchy Skin", "Ear Mites", "Fleas"];
-
-  const openDrawer = () => {
-    Animated.timing(drawerAnim, {
-      toValue: width * 0.25,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const closeDrawer = () => {
-    Animated.timing(drawerAnim, {
-      toValue: width,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  };
+  // Reset conversation when leaving the chatbot screen
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        resetConversation();
+      };
+    }, [])
+  );
 
   const send = async (text: string) => {
     setChat((prev) => [...prev, { role: "user", text }]);
@@ -97,56 +131,34 @@ export default function ChatbotScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={90}
+    >
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
 
       {/* Header */}
-      <View style={{ padding: 15, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <TouchableOpacity onPress={() => openDrawer()}>
-          <Text style={{ fontSize: 20 }}>☰</Text>
+      <View style={{ paddingTop: 50, paddingBottom: 8, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#eee" }}>
+        <TouchableOpacity onPress={() => router.push("/home")}>
+          <Text style={{ fontSize: 24 }}>☰</Text>
         </TouchableOpacity>
-
-        <Text style={{ fontSize: 16, fontWeight: "bold" }}>Chat with AI bot</Text>
-
+        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Chat with AI bot</Text>
         <TouchableOpacity>
-          <Text style={{ fontSize: 20 }}>⋯</Text>
+          <Text style={{ fontSize: 24 }}>⋯</Text>
         </TouchableOpacity>
       </View>
 
       {/* Greeting */}
-      <View style={{ alignItems: "center", paddingVertical: 20 }}>
+      <View style={{ alignItems: "center", paddingVertical: 10 }}>
         <Image
           source={require("../../assets/images/samplecat.png")}
-          style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 10 }}
+          style={{ width: 70, height: 70, borderRadius: 35, marginBottom: 5 }}
         />
-        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Good morning, [Name]</Text>
-        <Text style={{ color: "#777", marginTop: 5 }}>
+        <Text style={{ fontSize: 16, fontWeight: "bold" }}>Good morning, [Name]</Text>
+        <Text style={{ color: "#777", marginTop: 3, fontSize: 13 }}>
           How can I help you and your pet?
         </Text>
-      </View>
-
-      {/* Suggestions */}
-      <View style={{ paddingHorizontal: 15, marginBottom: 10 }}>
-        <FlatList
-          horizontal
-          scrollEnabled={false}
-          data={suggestions}
-          keyExtractor={(item) => item}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => send(item)}
-              style={{
-                backgroundColor: "#FFE1C6",
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                marginRight: 8,
-                borderRadius: 20,
-              }}
-            >
-              <Text style={{ color: "#D97706", fontSize: 12 }}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
       </View>
 
       {/* Chat Messages */}
@@ -156,22 +168,49 @@ export default function ChatbotScreen() {
         keyExtractor={(_, index) => index.toString()}
         style={{ flex: 1, paddingHorizontal: 15, paddingBottom: 10 }}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        renderItem={({ item }) => (
-          <View
-            style={{
-              alignSelf: item.role === "user" ? "flex-end" : "flex-start",
-              backgroundColor: item.role === "user" ? "#F79C4E" : "#E5E5EA",
-              marginVertical: 5,
-              padding: 12,
-              borderRadius: 15,
-              maxWidth: "80%",
-            }}
-          >
-            <FormattedText 
-              text={item.text} 
-            />
-          </View>
-        )}
+        renderItem={({ item, index }) => {
+          const answerOptions = item.role === "assistant" ? extractAnswerOptions(item.text) : [];
+          
+          return (
+            <View style={{ marginVertical: 5 }}>
+              <View
+                style={{
+                  alignSelf: item.role === "user" ? "flex-end" : "flex-start",
+                  backgroundColor: item.role === "user" ? "#F79C4E" : "#E5E5EA",
+                  padding: 12,
+                  borderRadius: 15,
+                  maxWidth: "80%",
+                }}
+              >
+                <FormattedText 
+                  text={item.text} 
+                />
+              </View>
+              
+              {/* Answer Option Buttons for Assistant Messages */}
+              {answerOptions.length > 0 && (
+                <View style={{ flexDirection: "row", marginTop: 10, gap: 8, alignSelf: "flex-start", flexWrap: "wrap" }}>
+                  {answerOptions.map((option, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => send(option)}
+                      disabled={loading}
+                      style={{
+                        backgroundColor: "#F79C4E",
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        opacity: loading ? 0.6 : 1,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        }}
         ListFooterComponent={
           loading ? (
             <View
@@ -197,15 +236,10 @@ export default function ChatbotScreen() {
           borderColor: "#ddd",
           paddingHorizontal: 10,
           paddingVertical: 15,
-          paddingBottom: 90,
+          paddingBottom: 120,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {/* Paperclip Icon */}
-          <TouchableOpacity style={{ marginRight: 10 }}>
-            <Text style={{ fontSize: 20 }}>📎</Text>
-          </TouchableOpacity>
-
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           {/* Text Input */}
           <TextInput
             value={message}
@@ -222,6 +256,7 @@ export default function ChatbotScreen() {
               borderWidth: 1,
               borderColor: "#DDD",
               fontSize: 14,
+              minHeight: 45,
             }}
           />
 
@@ -230,8 +265,8 @@ export default function ChatbotScreen() {
             onPress={handleSendMessage}
             disabled={loading}
             style={{
-              marginLeft: 10,
-              minWidth: 40,
+              minWidth: 45,
+              height: 45,
               justifyContent: "center",
               alignItems: "center",
             }}
@@ -244,64 +279,7 @@ export default function ChatbotScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Slide-Out Drawer */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          width: width * 0.9,
-          backgroundColor: "#fff",
-          borderLeftWidth: 2,
-          borderColor: "#ddd",
-          right: drawerAnim,
-          padding: 25,
-          paddingTop: 40,
-          zIndex: 1000,
-        }}
-      >
-        <TouchableOpacity onPress={closeDrawer} style={{ marginBottom: 40 }}>
-          <Text style={{ fontSize: 22, fontWeight: "bold", color: "#F79C4E" }}>
-            ✕ Close
-          </Text>
-        </TouchableOpacity>
-
-        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 30, color: "#333" }}>
-          Chat History
-        </Text>
-
-        <FlatList
-          data={[
-            "What is ringworm?",
-            "How to treat hotspots?",
-            "Why my cat is itchy?",
-          ]}
-          keyExtractor={(item, index) => index.toString()}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                send(item);
-                closeDrawer();
-              }}
-              style={{
-                paddingVertical: 22,
-                paddingHorizontal: 18,
-                borderBottomWidth: 2,
-                borderColor: "#E0E0E0",
-                backgroundColor: "#F8F8F8",
-                marginBottom: 12,
-                borderRadius: 10,
-                minHeight: 60,
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ fontSize: 18, color: "#333", fontWeight: "600" }}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      </Animated.View>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
