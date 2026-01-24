@@ -32,7 +32,7 @@ const Colors = {
 
 const API_URL = Platform.select({
   web: 'http://localhost:8080',
-  default: 'http://192.168.1.49:8080',
+  default: 'http://192.168.68.218:8080',
 });
 
 const CreateAccount = () => {

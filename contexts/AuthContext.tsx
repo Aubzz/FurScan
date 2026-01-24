@@ -2,14 +2,9 @@
 
 import { useRouter } from 'expo-router';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { API_URL } from '../constants/api';
 import { getToken, removeToken, saveToken } from '../utils/tokenStorage';
-
-// --- Define the API URL ---
-const API_URL = Platform.select({
-    web: 'http://localhost:8080',
-    default: 'http://10.151.237.144:8080', // Replace with your IP
-});
 
 // --- Define the shape of your user data ---
 interface User {

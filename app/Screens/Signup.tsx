@@ -19,7 +19,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
+
 
 const Colors = {
   background: '#FFFFFF',
@@ -31,11 +33,6 @@ const Colors = {
   progressBarInactive: '#EAEAEA',
   asteriskRed: '#FF0000',
 };
-
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://192.168.1.49:8080', // Replace with your IP
-});
 
 const securityQuestions = [
   "What was your first pet's name?",
@@ -74,7 +71,6 @@ const SignupScreen = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-
 
   const [errors, setErrors] = useState({
     firstName: '',
@@ -337,13 +333,29 @@ const SignupScreen = () => {
           {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
 
           <FormLabel label="Security Question" />
+          {/* FIX: Picker Container visibility and overlap fix */}
           <View style={styles.pickerContainer}>
-            <Picker selectedValue={securityQuestion} onValueChange={(itemValue) => setSecurityQuestion(itemValue)} style={styles.picker}>
-              {securityQuestions.map((q, i) => (<Picker.Item key={i} label={q} value={q} />))}
+            <Picker 
+                selectedValue={securityQuestion} 
+                onValueChange={(itemValue) => setSecurityQuestion(itemValue)} 
+                style={styles.picker}
+                dropdownIconColor={Colors.primaryOrange}
+                mode="dropdown" // Android dropdown is more reliable
+            >
+              {securityQuestions.map((q, i) => (
+                <Picker.Item 
+                  key={i} 
+                  label={q} 
+                  value={q} 
+                  color={Colors.textPrimary} // Forces text color for visibility
+                />
+              ))}
             </Picker>
           </View>
 
-          <FormLabel label="Your Answer" />
+          <View style={{ marginTop: Platform.OS === 'ios' ? 15 : 0 }}>
+            <FormLabel label="Your Answer" />
+          </View>
           <TextInput
             style={[ styles.input, errors.securityAnswer ? styles.inputError : null, focusedInput === 'securityAnswer' && styles.inputFocused ]}
             placeholder="Enter Your Answer" value={securityAnswer} onChangeText={setSecurityAnswer}
@@ -431,7 +443,8 @@ const SignupScreen = () => {
         style={styles.keyboardAvoidingContainer}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
           {renderStepContent()}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -459,7 +472,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.borderColor, // Default to gray
+    borderColor: Colors.borderColor,
     borderRadius: 12,
     padding: 15,
     fontFamily: 'Poppins-Regular',
@@ -471,7 +484,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.borderColor, // Default to gray
+    borderColor: Colors.borderColor,
     borderRadius: 12,
     paddingLeft: 15,
     marginBottom: 20,
@@ -481,21 +494,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.borderColor, // Default to gray
+    borderColor: Colors.borderColor,
     borderRadius: 12,
     marginBottom: 20,
   },
   inputFocused: {
     borderColor: Colors.primaryOrange,
-    borderWidth: 1.5, // Optional: make it slightly thicker on focus
+    borderWidth: 1.5,
   },
   countryCode: { fontFamily: 'Poppins-Regular', fontSize: 16, color: Colors.textPrimary },
   verticalDivider: { height: '60%', width: 1, backgroundColor: Colors.borderColor, marginHorizontal: 10 },
   mobileInput: { flex: 1, paddingVertical: 15, fontFamily: 'Poppins-Regular', fontSize: 16 },
   passwordInput: { flex: 1, padding: 15, fontFamily: 'Poppins-Regular', fontSize: 16 },
   eyeIcon: { paddingHorizontal: 15 },
-  pickerContainer: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.borderColor, borderRadius: 12, marginBottom: 20, justifyContent: 'center' },
-  picker: { height: Platform.OS === 'ios' ? 120 : 60 },
+  
+  // FIXED PICKER STYLES
+  pickerContainer: { 
+    backgroundColor: Colors.white, 
+    borderWidth: 1, 
+    borderColor: Colors.borderColor, 
+    borderRadius: 12, 
+    marginBottom: 20, 
+    justifyContent: 'center',
+    height: Platform.OS === 'ios' ? 150 : 60, 
+    overflow: 'hidden' 
+  },
+  picker: { 
+    height: Platform.OS === 'ios' ? 150 : 60, 
+    width: '100%',
+    color: Colors.textPrimary, // Forces text color for visibility
+  },
+
   checkboxContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 30 },
   checkbox: { marginRight: 10, marginTop: 2, width: 20, height: 20 },
   checkboxLabel: { flex: 1, fontFamily: 'Poppins-Regular', fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },

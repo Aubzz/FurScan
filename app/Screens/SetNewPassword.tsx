@@ -16,6 +16,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
+
 
 const Colors = {
   background: '#FFFFFF',
@@ -27,10 +29,6 @@ const Colors = {
   error: '#FF0000',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://192.168.1.498080', // Replace with your IP
-});
 
 const SetNewPasswordScreen = () => {
   const router = useRouter();

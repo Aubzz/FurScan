@@ -3,16 +3,17 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   Image,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
+
 
 // --- Constants ---
 const Colors = {
@@ -25,10 +26,7 @@ const Colors = {
   arrow: '#adb5bd',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://192.168.1.49:8080', // Replace with your IP
-});
+
 
 // --- TYPE DEFINITIONS (THIS IS THE FIX) ---
 
