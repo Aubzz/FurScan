@@ -1,7 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Image, Modal, Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    Image,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 const DOCTOR_IMAGES: any = {
   dog1: require('../../assets/images/doctor_1.png'),
@@ -40,21 +49,68 @@ const QUESTIONS: any = {
   Q17: { text: "Have humans in contact developed itchy or red skin spots?", yes: "FINISH", no: "FINISH", img: "dog7", hint: "This helps determine if the condition can jump to you (Zoonotic)." },
 };
 
+const SKIP_QUESTIONS_MAP: { [key: string]: string[] } = {
+  "hairloss": ["Q1"],
+  "hair loss": ["Q1"],
+  "circular bald patches": ["Q1", "Q2"],
+  "circular bald patch": ["Q1", "Q2"],
+  "scaling": ["Q12"],
+  "redness": ["Q8"],
+};
+
 export default function TellMeMoreScreen() {
   const router = useRouter();
-  
-  // UPDATED: Destructured allResults from params
   const { imageUri, aiPrediction, petName, petAge, petBreed, allResults } = useLocalSearchParams();
   
   const [questionId, setQuestionId] = useState("Q1");
   const [answers, setAnswers] = useState<any>({});
   const [history, setHistory] = useState<string[]>([]);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [skipQuestionsSet, setSkipQuestionsSet] = useState<string[]>([]);
+  const [autoDetected, setAutoDetected] = useState<string[]>([]);
 
-  const currentMascot = useMemo(() => {
-    const imgKey = QUESTIONS[questionId]?.img || "dog1";
-    return DOCTOR_IMAGES[imgKey];
-  }, [questionId]);
+  useEffect(() => {
+    let skipSet: string[] = [];
+    let initialAnswers: any = {};
+    let detectedList: string[] = [];
+    
+    try {
+      if (allResults) {
+        const parsed = JSON.parse(allResults as string);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item: any) => {
+            const label = (item?.label || item?.name || "").toLowerCase().trim();
+            if (SKIP_QUESTIONS_MAP[label]) {
+              skipSet.push(...SKIP_QUESTIONS_MAP[label]);
+              detectedList.push(label);
+              SKIP_QUESTIONS_MAP[label].forEach(qId => { initialAnswers[qId] = 'yes'; });
+            }
+          });
+        }
+      }
+    } catch (e) { console.error(e); }
+    
+    const uniqueSkips = [...new Set(skipSet)];
+    setSkipQuestionsSet(uniqueSkips);
+    setAutoDetected([...new Set(detectedList)]);
+    setAnswers(initialAnswers);
+
+    if (uniqueSkips.includes("Q1")) {
+      setQuestionId(findNextNonSkipped("Q1", "yes", uniqueSkips));
+    }
+  }, [allResults]);
+
+  const findNextNonSkipped = (currentId: string, answer: 'yes' | 'no', skips: string[]): string => {
+    let nextId = QUESTIONS[currentId][answer];
+    let safety = 0;
+    while (skips.includes(nextId) && safety < 15) {
+      const autoNext = QUESTIONS[nextId]?.yes;
+      if (!autoNext || !QUESTIONS[autoNext]) break;
+      nextId = autoNext;
+      safety++;
+    }
+    return nextId;
+  };
 
   const handleBack = () => {
     if (history.length > 0) {
@@ -69,7 +125,8 @@ export default function TellMeMoreScreen() {
   const handleAnswer = (val: 'yes' | 'no') => {
     const updatedAnswers = { ...answers, [questionId]: val };
     setAnswers(updatedAnswers);
-    const next = QUESTIONS[questionId][val];
+    
+    const next = findNextNonSkipped(questionId, val, skipQuestionsSet);
 
     const isDiagnosis = ["RINGWORM", "FUNGAL INFECTION", "DEMODECTIC MANGE", "SARCOPTIC MANGE", "HYPERSENSITIVITY", "DERMATITIS"].includes(next);
 
@@ -82,43 +139,17 @@ export default function TellMeMoreScreen() {
   };
 
   const calculateResult = (allAnswers: any, finalPath: string) => {
-    const yesCount = Object.values(allAnswers).filter(val => val === 'yes').length;
-    let winner = "";
-
-    if (yesCount <= 1) {
-      winner = "No Skin Disease Present";
-    } else {
-      let scores: any = { "Ringworm": 0, "Fungal Infection": 0, "Sarcoptic Mange": 0, "Demodectic Mange": 0, "Hypersensitivity": 0, "Dermatitis": 0 };
-      const diagnosisMap: any = { "RINGWORM": "Ringworm", "FUNGAL INFECTION": "Fungal Infection", "DEMODECTIC MANGE": "Demodectic Mange", "SARCOPTIC MANGE": "Sarcoptic Mange", "HYPERSENSITIVITY": "Hypersensitivity", "DERMATITIS": "Dermatitis" };
-      if (diagnosisMap[finalPath]) scores[diagnosisMap[finalPath]] += 40;
-
-      if (allAnswers.Q9 === 'yes') { scores["Sarcoptic Mange"] += 5; scores["Ringworm"] += 5; }
-      if (allAnswers.Q10 === 'yes') { scores["Hypersensitivity"] += 5; scores["Dermatitis"] += 5; }
-      if (allAnswers.Q11 === 'yes') scores["Demodectic Mange"] += 10;
-      if (allAnswers.Q12 === 'yes') scores["Fungal Infection"] += 10;
-      if (allAnswers.Q13 === 'yes') { scores["Fungal Infection"] += 5; scores["Ringworm"] += 5; }
-      if (allAnswers.Q14 === 'yes') scores["Demodectic Mange"] += 10;
-      if (allAnswers.Q15 === 'yes') scores["Hypersensitivity"] += 10;
-      if (allAnswers.Q16 === 'yes') { scores["Sarcoptic Mange"] += 10; scores["Ringworm"] += 10; }
-      if (allAnswers.Q17 === 'yes') { scores["Ringworm"] += 15; scores["Sarcoptic Mange"] += 10; }
-      if (aiPrediction && scores.hasOwnProperty(aiPrediction)) scores[aiPrediction as string] += 5;
-      winner = Object.entries(scores).reduce((a: any, b: any) => (a[1] > b[1] ? a : b))[0];
-    }
-
-    const summary = Object.keys(allAnswers).filter(key => allAnswers[key] === 'yes').map(key => QUESTIONS[key].text);
+    const diagnosisMap: any = { 
+        "RINGWORM": "Ringworm", "FUNGAL INFECTION": "Fungal Infection", 
+        "DEMODECTIC MANGE": "Demodectic Mange", "SARCOPTIC MANGE": "Sarcoptic Mange", 
+        "HYPERSENSITIVITY": "Hypersensitivity", "DERMATITIS": "Dermatitis" 
+    };
+    const winner = diagnosisMap[finalPath] || "No Skin Disease Present";
+    const summary = Object.keys(allAnswers).filter(k => allAnswers[k] === 'yes').map(k => QUESTIONS[k].text);
     
-    // UPDATED: Added allResults back into params to pass to the report screen
     router.push({ 
       pathname: '/Screens/DiagnosisReportScreen' as any, 
-      params: { 
-        condition: winner, 
-        summary: JSON.stringify(summary), 
-        imageUri, 
-        petName, 
-        petAge, 
-        petBreed,
-        allResults: allResults 
-      } 
+      params: { condition: winner, summary: JSON.stringify(summary), imageUri, petName, petAge, petBreed, allResults } 
     });
   };
 
@@ -133,8 +164,10 @@ export default function TellMeMoreScreen() {
                 <Ionicons name="close-circle" size={24} color="#E89152" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.bubbleText}>{QUESTIONS[questionId].hint}</Text>
-            
+            <Text style={styles.bubbleText}>
+                {autoDetected.length > 0 && `Based on the ${autoDetected.join(', ')} we detected, `}
+                {QUESTIONS[questionId].hint}
+            </Text>
             <TouchableOpacity style={styles.closeBtnSmall} onPress={() => setShowExplanation(false)}>
                 <Text style={styles.closeBtnText}>Got it!</Text>
             </TouchableOpacity>
@@ -159,12 +192,24 @@ export default function TellMeMoreScreen() {
 
           <View style={styles.textHeader}>
             <Text style={styles.title}>Tell Us More</Text>
-            <Text style={styles.sub}>Answer correctly for a better assessment.</Text>
+            {autoDetected.length > 0 && (
+              <View style={styles.detectedBadgeContainer}>
+                <Text style={styles.detectedTitle}>AI DETECTED:</Text>
+                <View style={styles.badgeRow}>
+                  {autoDetected.map((item, i) => (
+                    <View key={i} style={styles.badge}>
+                      <Ionicons name="checkmark-circle" size={12} color="#5CB85C" />
+                      <Text style={styles.badgeText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
         <View style={styles.centerArea}>
-          <Image source={currentMascot} style={styles.mascot} resizeMode="contain" />
+          <Image source={DOCTOR_IMAGES[QUESTIONS[questionId]?.img || "dog1"]} style={styles.mascot} resizeMode="contain" />
           <View style={styles.card}>
             <Text style={styles.qText}>{QUESTIONS[questionId].text}</Text>
             <TouchableOpacity style={styles.helpIconButton} onPress={() => setShowExplanation(true)}>
@@ -199,7 +244,11 @@ const styles = StyleSheet.create({
   activeLine: { backgroundColor: '#E89152' },
   textHeader: { marginBottom: 10 },
   title: { fontSize: 32, fontWeight: 'bold', color: '#E89152' },
-  sub: { fontSize: 14, color: '#666', marginTop: 4 },
+  detectedBadgeContainer: { marginTop: 10, backgroundColor: '#F0F9F0', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#D0EED0' },
+  detectedTitle: { fontSize: 9, fontWeight: '900', color: '#5CB85C', marginBottom: 5, letterSpacing: 1 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0' },
+  badgeText: { fontSize: 11, color: '#444', marginLeft: 4, fontWeight: '600', textTransform: 'capitalize' },
   centerArea: { alignItems: 'center', justifyContent: 'center', flex: 1 },
   mascot: { width: 160, height: 160, marginBottom: -35, zIndex: 1 },
   card: { backgroundColor: '#FFF9F5', width: '100%', paddingVertical: 40, paddingHorizontal: 25, borderRadius: 35, borderWidth: 1, borderColor: '#F0E0D5', alignItems: 'center' },

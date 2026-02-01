@@ -34,13 +34,20 @@ export default function ResultsScreen() {
     return results.filter(p => p.label.toLowerCase() !== 'healthy').length;
   }, [results]);
 
+  // ← FIXED: Pass ALL detected results to TellMeMoreScreen
   const handleProceed = () => {
+    console.log("Passing predictions to TellMeMoreScreen:", predictions);
+    
     router.push({
       pathname: '/Screens/TellMeMoreScreen' as any,
       params: { 
         imageUri: imageUri,
+        // ← Pass the highest confidence disease as primary prediction
         aiPrediction: !isHealthy && results.length > 0 ? results[0].label : "Healthy",
-        petName, petAge, petBreed,
+        petName, 
+        petAge, 
+        petBreed,
+        // ← Pass ALL predictions (not just the first one)
         allResults: predictions 
       }
     });
@@ -142,7 +149,6 @@ export default function ResultsScreen() {
 
           <TouchableOpacity 
             style={styles.scanAgainBtn} 
-            // FIXED: Using 'as any' and ensuring the path matches your router
             onPress={() => router.replace('/Screens/ScanScreen' as any)}
           >
             <Ionicons name="refresh" size={20} color="#F7924A" />
@@ -185,7 +191,6 @@ const styles = StyleSheet.create({
   barFill: { position: 'absolute', left: 0, height: '100%', opacity: 0.3 },
   conditionLabel: { fontSize: 13, fontWeight: 'bold', color: '#8D5932', zIndex: 1 },
   percentageText: { fontSize: 17, fontWeight: 'bold', color: '#000', width: 60, textAlign: 'right' },
-  // ← NEW: Info box for multiple conditions
   infoBox: { 
     flexDirection: 'row', 
     backgroundColor: '#FFF9F5', 
