@@ -47,20 +47,17 @@ export default function ScanScreen() {
     }
   }, [isProcessing]);
 
-  // --- UPDATED BACKEND CONFIG ---
   const BACKEND_URL = 'http://192.168.100.4:8080/predict';
 
   const uploadToModel = async (uri: string) => {
     setIsProcessing(true);
     try {
       const formData = new FormData();
-      
       const filePayload = {
         uri: uri,
         name: 'photo.jpg',
         type: 'image/jpeg',
       };
-
       // @ts-ignore
       formData.append('file', filePayload);
       
@@ -73,23 +70,16 @@ export default function ScanScreen() {
         },
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server Error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Server Error: ${response.status}`);
 
       const data = await response.json();
       
-      console.log("Backend Response:", data);
-      
-      // ← FIXED: Now passes ALL predictions (not just the first one)
-      // The backend returns all diseases sorted by confidence
       router.push({
         pathname: "/Screens/ResultScreen" as any, 
         params: { 
           imageUri: uri, 
           status: data.status, 
-          predictions: JSON.stringify(data.predictions || []), // ← Pass entire predictions array
+          predictions: JSON.stringify(data.predictions || []), 
           petName, 
           petAge,  
           petBreed 
@@ -97,10 +87,7 @@ export default function ScanScreen() {
       });
     } catch (e: any) {
       console.error("Upload Error:", e);
-      Alert.alert(
-        "Scan Failed", 
-        "Make sure the Python backend is running and your phone is on the same Wi-Fi network."
-      );
+      Alert.alert("Scan Failed", "Check backend connection and Wi-Fi.");
     } finally { 
       setIsProcessing(false); 
     }
@@ -134,6 +121,7 @@ export default function ScanScreen() {
             <Animated.Text style={[styles.loadingText, { opacity: textOpacity }]}>
                 ANALYZING SKIN
             </Animated.Text>
+            {/* FIXED: Replaced 'div' with 'View' */}
             <View style={styles.loadingBarContainer}>
                 <View style={styles.loadingBarActive} />
             </View>
@@ -142,7 +130,6 @@ export default function ScanScreen() {
       )}
 
       <CameraView style={styles.camera} ref={cameraRef} zoom={zoom} enableTorch={torchEnabled}>
-        {/* CAMERA MASK/FRAME */}
         <View style={styles.maskOverlay}>
           <View style={styles.maskRow} />
           <View style={styles.maskCenterRow}>
@@ -159,9 +146,9 @@ export default function ScanScreen() {
         </View>
 
         <SafeAreaView style={styles.uiContainer}>
-          {/* HEADER SECTION */}
+          {/* HEADER SECTION - FIXED BACK BUTTON */}
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.replace('/Screens/PhotoTipsScreen' as any)}>
               <Ionicons name="arrow-back" size={28} color="white" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>PET SKIN SCANNER</Text>
@@ -200,9 +187,7 @@ export default function ScanScreen() {
                 <View style={styles.shutterInner} />
               </TouchableOpacity>
 
-              <View style={styles.utilityBtn}>
-                {/* Empty view for spacing symmetry */}
-              </View>
+              <View style={styles.utilityBtn} />
             </View>
           </View>
         </SafeAreaView>
@@ -222,37 +207,11 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   loadingBox: { alignItems: 'center', justifyContent: 'center' },
-  spinnerWrapper: {
-    width: 200,
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative'
-  },
-  pawInside: {
-    position: 'absolute',
-    zIndex: 10,
-  },
-  loadingText: { 
-    color: '#F7924A', 
-    marginTop: 60,
-    fontWeight: '900', 
-    fontSize: 16, 
-    letterSpacing: 3 
-  },
-  loadingBarContainer: {
-    width: 120,
-    height: 3,
-    backgroundColor: 'rgba(247, 146, 74, 0.2)',
-    marginTop: 12,
-    borderRadius: 2,
-    overflow: 'hidden'
-  },
-  loadingBarActive: {
-    width: '45%',
-    height: '100%',
-    backgroundColor: '#F7924A'
-  },
+  spinnerWrapper: { width: 200, height: 200, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  pawInside: { position: 'absolute', zIndex: 10 },
+  loadingText: { color: '#F7924A', marginTop: 60, fontWeight: '900', fontSize: 16, letterSpacing: 3 },
+  loadingBarContainer: { width: 120, height: 3, backgroundColor: 'rgba(247, 146, 74, 0.2)', marginTop: 12, borderRadius: 2, overflow: 'hidden' },
+  loadingBarActive: { width: '45%', height: '100%', backgroundColor: '#F7924A' },
   maskOverlay: { ...StyleSheet.absoluteFillObject },
   maskRow: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   maskCenterRow: { flexDirection: 'row', height: FRAME_HEIGHT },
@@ -260,26 +219,12 @@ const styles = StyleSheet.create({
   frameContainer: { width: FRAME_WIDTH, height: FRAME_HEIGHT, position: 'relative' },
   corner: { position: 'absolute', width: 40, height: 40, borderColor: '#F7924A' },
   uiContainer: { flex: 1, justifyContent: 'space-between' },
-  headerRow: { 
-    flexDirection: 'row', 
-    padding: 20, 
-    alignItems: 'center', 
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(0,0,0,0.2)' 
-  },
+  headerRow: { flexDirection: 'row', padding: 20, alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(0,0,0,0.2)' },
   headerTitle: { color: 'white', fontWeight: 'bold', fontSize: 14, letterSpacing: 2 },
   controlsSection: { paddingBottom: 40, backgroundColor: 'rgba(0,0,0,0.2)' },
   zoomSlider: { width: '80%', alignSelf: 'center', height: 40 },
   actionButtons: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  shutterOuter: { 
-    width: 82, 
-    height: 82, 
-    borderRadius: 41, 
-    borderWidth: 4, 
-    borderColor: 'white', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
+  shutterOuter: { width: 82, height: 82, borderRadius: 41, borderWidth: 4, borderColor: 'white', justifyContent: 'center', alignItems: 'center' },
   shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: 'white' },
   utilityBtn: { alignItems: 'center', width: 70 },
   utilityText: { color: 'white', fontSize: 11, marginTop: 4, fontWeight: '500' }

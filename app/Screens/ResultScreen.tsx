@@ -2,18 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// Import your interface to fix the 'any' warnings
 import { Prediction } from './types';
 
 export default function ResultsScreen() {
-  const { imageUri, predictions, petName, petAge, petBreed, status } = useLocalSearchParams();
+  const { imageUri, predictions, petName, petAge, petBreed } = useLocalSearchParams();
   const router = useRouter();
 
-  // 1. Parse results with proper typing
   const results = useMemo<Prediction[]>(() => {
     try {
       const parsed = predictions ? JSON.parse(predictions as string) : [];
-      // ← FIXED: Sort by confidence (highest first) but show ALL diseases
       return Array.isArray(parsed) 
         ? parsed.sort((a, b) => (b.percentage || 0) - (a.percentage || 0))
         : [];
@@ -23,31 +20,24 @@ export default function ResultsScreen() {
     }
   }, [predictions]);
 
-  // 2. Accurate Healthy Check: If the list contains only 'healthy' or is empty
   const isHealthy = useMemo(() => {
     if (results.length === 0) return true;
     return !results.some((p) => p.label.toLowerCase() !== 'healthy');
   }, [results]);
 
-  // ← NEW: Get disease count for display
   const diseaseCount = useMemo(() => {
     return results.filter(p => p.label.toLowerCase() !== 'healthy').length;
   }, [results]);
 
-  // ← FIXED: Pass ALL detected results to TellMeMoreScreen
   const handleProceed = () => {
-    console.log("Passing predictions to TellMeMoreScreen:", predictions);
-    
     router.push({
       pathname: '/Screens/TellMeMoreScreen' as any,
       params: { 
-        imageUri: imageUri,
-        // ← Pass the highest confidence disease as primary prediction
+        imageUri,
         aiPrediction: !isHealthy && results.length > 0 ? results[0].label : "Healthy",
         petName, 
         petAge, 
         petBreed,
-        // ← Pass ALL predictions (not just the first one)
         allResults: predictions 
       }
     });
@@ -90,6 +80,7 @@ export default function ResultsScreen() {
         {/* Image Card */}
         <View style={styles.imageCard}>
           <Image source={{ uri: imageUri as string }} style={styles.scannedImage} resizeMode="cover" />
+          {/* FIXED: Changed div to View below */}
           <View style={[styles.statusBadge, isHealthy ? styles.healthyBadge : styles.warningBadge]}>
             <Ionicons 
               name={isHealthy ? "checkmark-circle" : "warning"} 
@@ -102,7 +93,7 @@ export default function ResultsScreen() {
           </View>
         </View>
         
-        {/* Results List - NOW SHOWS ALL DISEASES */}
+        {/* Results List */}
         <View style={styles.resultsWrapper}>
           {!isHealthy && results.length > 0 ? (
             <View>
@@ -118,14 +109,6 @@ export default function ResultsScreen() {
                   <Text style={styles.percentageText}>{p.percentage}%</Text>
                 </View>
               ))}
-              
-              {/* Additional Info */}
-              <View style={styles.infoBox}>
-                <Ionicons name="information-circle" size={20} color="#F7924A" />
-                <Text style={styles.infoText}>
-                  Multiple conditions may be present. Consult a veterinary dermatologist for accurate diagnosis.
-                </Text>
-              </View>
             </View>
           ) : (
             <View style={styles.healthyInfoBox}>
@@ -139,17 +122,33 @@ export default function ResultsScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.continueBtn, !isHealthy && { backgroundColor: '#E74C3C' }]} 
-            onPress={handleProceed}
-          >
-            <Text style={styles.continueBtnText}>Proceed to Questionnaire</Text>
-            <Ionicons name="chevron-forward" size={20} color="white" />
-          </TouchableOpacity>
+          {!isHealthy ? (
+            <TouchableOpacity 
+              style={[styles.continueBtn, { backgroundColor: '#E74C3C' }]} 
+              onPress={handleProceed}
+            >
+              <Text style={styles.continueBtnText}>Proceed to Questionnaire</Text>
+              <Ionicons name="chevron-forward" size={20} color="white" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.continueBtn, { backgroundColor: '#27AE60' }]} 
+              onPress={() => router.replace({
+                pathname: '/Screens/StartScreen' as any,
+                params: { petName, petAge, petBreed }
+              })}
+            >
+              <Ionicons name="home" size={20} color="white" style={{ marginRight: 8 }} />
+              <Text style={styles.continueBtnText}>Return to Home</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity 
             style={styles.scanAgainBtn} 
-            onPress={() => router.replace('/Screens/ScanScreen' as any)}
+            onPress={() => router.replace({
+              pathname: '/Screens/ScanScreen' as any,
+              params: { petName, petAge, petBreed }
+            })}
           >
             <Ionicons name="refresh" size={20} color="#F7924A" />
             <Text style={styles.scanAgainText}>Retake Photo</Text>
@@ -191,25 +190,8 @@ const styles = StyleSheet.create({
   barFill: { position: 'absolute', left: 0, height: '100%', opacity: 0.3 },
   conditionLabel: { fontSize: 13, fontWeight: 'bold', color: '#8D5932', zIndex: 1 },
   percentageText: { fontSize: 17, fontWeight: 'bold', color: '#000', width: 60, textAlign: 'right' },
-  infoBox: { 
-    flexDirection: 'row', 
-    backgroundColor: '#FFF9F5', 
-    padding: 15, 
-    borderRadius: 15, 
-    marginTop: 20, 
-    borderWidth: 1, 
-    borderColor: '#F0E0D5',
-    alignItems: 'center'
-  },
-  infoText: { 
-    fontSize: 12, 
-    color: '#666', 
-    marginLeft: 10, 
-    flex: 1,
-    lineHeight: 18
-  },
   footer: { paddingHorizontal: 25, marginTop: 30 },
-  continueBtn: { backgroundColor: '#F7924A', paddingVertical: 18, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 12 },
+  continueBtn: { paddingVertical: 18, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 12 },
   continueBtnText: { color: 'white', fontWeight: 'bold', fontSize: 18, marginRight: 8 },
   scanAgainBtn: { paddingVertical: 18, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', borderWidth: 2, borderColor: '#F7924A' },
   scanAgainText: { color: '#F7924A', fontWeight: 'bold', fontSize: 16, marginLeft: 8 }

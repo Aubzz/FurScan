@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
+import numpy as np
 import uvicorn
 
 app = FastAPI()
@@ -24,31 +25,92 @@ CLASS_NAMES = ["circular bald patches", "hairloss", "healthy", "redness", "scali
 # Disease characteristics for validation
 DISEASE_CHARACTERISTICS = {
     "circular bald patches": {
-        "min_confidence": 0.45,
+        "min_confidence": 0.51,
         "description": "Circular or oval shaped hair loss areas",
         "appearance": "Well-defined circular bald spots on skin"
     },
     "hairloss": {
-        "min_confidence": 0.40,
+        "min_confidence": 0.46,
         "description": "General hair loss or thinning",
         "appearance": "Diffuse or patchy hair loss across area"
     },
     "redness": {
-        "min_confidence": 0.42,
+        "min_confidence": 0.48,
         "description": "Reddish or inflamed skin",
         "appearance": "Visible redness or inflammation"
     },
     "scaling": {
-        "min_confidence": 0.41,
+        "min_confidence": 0.47,
         "description": "Scaly or flaky skin",
         "appearance": "Visible scaling or flaking on skin surface"
     },
     "healthy": {
-        "min_confidence": 0.50,
+        "min_confidence": 0.56,
         "description": "Healthy skin with no abnormalities",
         "appearance": "Clear, smooth, normal skin"
     }
 }
+
+# --- SKIN PRESENCE CHECK ---
+SKIN_RATIO_THRESHOLD = 0.02  # 2% of image pixels must be skin-like
+SKIN_CLASSIFIER_THRESHOLD = 0.08  # Combined-classifier score threshold (raised to reduce false positives)
+MIN_DETECTION_AREA = 0.01  # Minimum box area ratio (1% of image) to consider a detection
+
+def skin_pixel_ratio(pil_img):
+    """Return ratio of pixels that match a simple skin-color heuristic."""
+    try:
+        arr = np.array(pil_img.resize((200,200))).astype('float') / 255.0
+        r = arr[..., 0]
+        g = arr[..., 1]
+        b = arr[..., 2]
+        mask = (r > 0.36) & (g > 0.28) & (b > 0.20) & (r > g) & (r > b) & ((r - g) > 0.05)
+        return float(mask.mean())
+    except Exception as e:
+        print(f"  ℹ Skin check error: {e}")
+        return 0.0
+
+
+def skin_classifier(pil_img):
+    """Fast rule-based skin-vs-non-skin classifier that returns a score (0..1).
+    Combines RGB heuristic, YCbCr chroma thresholds, average saturation and simple edge-density penalty.
+    """
+    try:
+        small = pil_img.resize((200,200))
+        arr = np.array(small).astype('float') / 255.0
+        r = arr[..., 0]
+        g = arr[..., 1]
+        b = arr[..., 2]
+
+        # RGB heuristic
+        mask_rgb = (r > 0.36) & (g > 0.28) & (b > 0.20) & (r > g) & (r > b) & ((r - g) > 0.05)
+        ratio_rgb = float(mask_rgb.mean())
+
+        # YCbCr heuristic (common skin chroma ranges)
+        ycbcr = np.array(small.convert('YCbCr')).astype('float')
+        cb = ycbcr[..., 1]
+        cr = ycbcr[..., 2]
+        mask_ycbcr = (cb >= 77) & (cb <= 127) & (cr >= 133) & (cr <= 173)
+        ratio_ycbcr = float(mask_ycbcr.mean())
+
+        # HSV saturation (skin often has reasonable saturation)
+        hsv = np.array(small.convert('HSV')).astype('float') / 255.0
+        sat = hsv[..., 1]
+        avg_sat = float(sat.mean())
+
+        # Simple edge density (non-skin textures like fabric often have higher edge density)
+        gray = np.array(small.convert('L')).astype('float') / 255.0
+        gx = np.abs(np.pad(gray, ((1,1),(1,1)), mode='reflect')[1:-1,2:] - np.pad(gray, ((1,1),(1,1)), mode='reflect')[1:-1,:-2])
+        gy = np.abs(np.pad(gray, ((1,1),(1,1)), mode='reflect')[2:,1:-1] - np.pad(gray, ((1,1),(1,1)), mode='reflect')[:-2,1:-1])
+        edge = np.sqrt(gx * gx + gy * gy)
+        edge_density = float((edge > 0.25).mean())
+
+        # Combine features into a single score
+        score = 0.45 * ratio_rgb + 0.45 * ratio_ycbcr + 0.05 * avg_sat - 0.2 * edge_density
+        score = max(0.0, min(1.0, score))
+        return score
+    except Exception as e:
+        print(f"  ℹ Skin classifier error: {e}")
+        return 0.0
 
 def load_models():
     """Load all 5 individual YOLOv8 models"""
@@ -152,9 +214,25 @@ async def predict(file: UploadFile = File(...)):
         bytes_data = await file.read()
         img = Image.open(io.BytesIO(bytes_data)).convert("RGB")
         
+        # Quick skin-content check to avoid running models on non-skin images
+        skin_ratio = skin_pixel_ratio(img)
+        classifier_score = skin_classifier(img)
+        print(f"Skin pixel ratio: {skin_ratio:.4f}, classifier_score: {classifier_score:.4f}")
+        if classifier_score < SKIN_CLASSIFIER_THRESHOLD:
+            print("  ✗ Low skin content detected by classifier - aborting detection")
+            return {
+                "status": "Inconclusive",
+                "message": "Image does not contain sufficient skin regions for diagnosis. Please take a closer picture of the affected area.",
+                "predictions": [],
+                "total_detections": 0,
+                "valid_detections": 0,
+                "models_used": sum(1 for m in yolo_models.values() if m is not None),
+                "model": "5-Model Pipeline"
+            }
+        
         print("\n" + "="*60)
         print("🐾 DERMAPAW 5-MODEL DETECTION PIPELINE")
-        print("="*60)
+        print("="*60) 
         
         all_detections = []
         
@@ -177,24 +255,62 @@ async def predict(file: UploadFile = File(...)):
                 results = model(img, conf=0.38)
                 
                 for result in results:
+                    img_w, img_h = img.size
                     for i, box in enumerate(result.boxes):
                         confidence = float(box.conf[0])
-                        
+
                         confidence_bar = "█" * int(confidence * 20)
                         print(f"  Detection: {confidence*100:6.2f}% {confidence_bar}")
-                        
-                        # ← Accept detection if confidence passes threshold
-                        if confidence > 0.38:
+
+                        # Attempt to get box coordinates (x1,y1,x2,y2)
+                        try:
+                            xyxy = box.xyxy[0].tolist()
+                        except Exception:
+                            try:
+                                xyxy = list(map(float, box.xyxy.tolist()[0]))
+                            except Exception:
+                                xyxy = None
+
+                        box_area_ratio = 0.0
+                        if xyxy:
+                            x1, y1, x2, y2 = xyxy
+                            box_w = max(0.0, x2 - x1)
+                            box_h = max(0.0, y2 - y1)
+                            box_area_ratio = (box_w * box_h) / (img_w * img_h) if (img_w * img_h) > 0 else 0.0
+
+                        # Reject tiny detections (likely noise or background)
+                        if box_area_ratio < MIN_DETECTION_AREA:
+                            print(f"  ⚠ REJECTED (Box too small: {box_area_ratio*100:.3f}% of image)")
+                            continue
+
+                        # Verify the cropped box region contains skin-like pixels
+                        crop_score = None
+                        try:
+                            x1i, y1i, x2i, y2i = map(int, [x1, y1, x2, y2])
+                            crop = img.crop((max(0, x1i), max(0, y1i), min(img_w, x2i), min(img_h, y2i)))
+                            crop_score = skin_classifier(crop)
+                            print(f"    Crop skin score: {crop_score:.4f}")
+                            if crop_score < SKIN_CLASSIFIER_THRESHOLD:
+                                print(f"  ⚠ REJECTED (Crop not skin-like: score {crop_score:.3f})")
+                                continue
+                        except Exception as e:
+                            print(f"  ℹ Crop skin check error: {e}")
+
+                        # ← Accept detection if confidence passes disease-specific threshold
+                        disease_min_conf = DISEASE_CHARACTERISTICS.get(disease, {}).get("min_confidence", 0.38)
+                        if confidence >= disease_min_conf:
                             all_detections.append({
                                 "label": disease,
                                 "confidence": confidence,
                                 "percentage": round(confidence * 100, 1),
                                 "source": f"{disease}-model",
-                                "rank": i+1
+                                "rank": i+1,
+                                "box_area_ratio": box_area_ratio,
+                                "crop_skin_score": crop_score
                             })
-                            print(f"  ✓ ACCEPTED (Confidence >= 38%)")
+                            print(f"  ✓ ACCEPTED (Confidence >= {disease_min_conf*100:.1f}%)")
                         else:
-                            print(f"  ⚠ REJECTED (Confidence < 38%)")
+                            print(f"  ⚠ REJECTED (Confidence < {disease_min_conf*100:.1f}%)")
                 
                 if len(results[0].boxes) == 0:
                     print(f"  ℹ No detection")
