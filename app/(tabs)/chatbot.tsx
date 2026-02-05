@@ -9,7 +9,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Modal,
+  SafeAreaView
 } from "react-native";
 
 import { resetConversation, sendMessage } from "../services/botpressApi";
@@ -25,10 +27,9 @@ const TypingDots = () => {
   );
 };
 
-// Component to render text with bold formattingg
+// Component to render text with bold formatting
 const FormattedText = ({ text }: { text: string }) => {
   const parts = text.split(/(\*\*.*?\*\*)/g);
-  
   return (
     <Text style={{ color: "inherit" }}>
       {parts.map((part, index) => {
@@ -45,47 +46,19 @@ const FormattedText = ({ text }: { text: string }) => {
   );
 };
 
-// Helper function to extract answer options from a system message
 const extractAnswerOptions = (text: string): string[] => {
-  // Check if it's a question
-  if (!text.includes("?")) {
-    return [];
-  }
-  
-  // Pattern 1: Extract (Option1 / Option2 / Option3) format
+  if (!text.includes("?")) return [];
   const parenthesesMatch = text.match(/\(([^)]+)\)/g);
   if (parenthesesMatch) {
     for (const match of parenthesesMatch) {
-      const options = match
-        .slice(1, -1) // Remove parentheses
-        .split("/")
-        .map(opt => opt.trim())
-        .filter(opt => opt.length > 0);
-      
-      // Only return if we found valid options (2 or more)
-      if (options.length >= 2) {
-        return options;
-      }
+      const options = match.slice(1, -1).split("/").map(opt => opt.trim()).filter(opt => opt.length > 0);
+      if (options.length >= 2) return options;
     }
   }
-  
-  // Pattern 2: Check for explicit yes/no indicators
-  const yesNoPatterns = [
-    /\(Yes\s*\/\s*No\)/i,
-    /Yes\s*or\s*No/i,
-    /\bYes\b.*\bNo\b/i,
-  ];
-  
-  if (yesNoPatterns.some(pattern => pattern.test(text))) {
-    return ["Yes", "No"];
-  }
-  
-  // Pattern 3: Standalone yes/no questions (Is, Are, Do, Did, Can, Could, Would, Should)
+  const yesNoPatterns = [/\(Yes\s*\/\s*No\)/i, /Yes\s*or\s*No/i, /\bYes\b.*\bNo\b/i];
+  if (yesNoPatterns.some(pattern => pattern.test(text))) return ["Yes", "No"];
   const standaloneQuestionStart = /^(Is|Are|Do|Did|Can|Could|Would|Should|Have|Has|Will|Might)\s/i;
-  if (standaloneQuestionStart.test(text.trim())) {
-    return ["Yes", "No"];
-  }
-  
+  if (standaloneQuestionStart.test(text.trim())) return ["Yes", "No"];
   return [];
 };
 
@@ -94,10 +67,10 @@ export default function ChatbotScreen() {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [infoVisible, setInfoVisible] = useState(false); // State for Info Modal
 
   const flatListRef = useRef<FlatList>(null);
 
-  // Reset conversation when leaving the chatbot screen
   useFocusEffect(
     useCallback(() => {
       return () => {
@@ -131,155 +104,143 @@ export default function ChatbotScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={90}
-    >
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
-
-      {/* Header */}
-      <View style={{ paddingTop: 50, paddingBottom: 8, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#eee" }}>
-        <TouchableOpacity onPress={() => router.push("/home")}>
-          <Text style={{ fontSize: 24 }}>☰</Text>
-        </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Chat with AI bot</Text>
-        <TouchableOpacity>
-          <Text style={{ fontSize: 24 }}>⋯</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Greeting */}
-      <View style={{ alignItems: "center", paddingVertical: 10 }}>
-        <Image
-          source={require("../../assets/images/samplecat.png")}
-          style={{ width: 70, height: 70, borderRadius: 35, marginBottom: 5 }}
-        />
-        <Text style={{ fontSize: 16, fontWeight: "bold" }}>Good morning, [Name]</Text>
-        <Text style={{ color: "#777", marginTop: 3, fontSize: 13 }}>
-          How can I help you and your pet?
-        </Text>
-      </View>
-
-      {/* Chat Messages */}
-      <FlatList
-        ref={flatListRef}
-        data={chat}
-        keyExtractor={(_, index) => index.toString()}
-        style={{ flex: 1, paddingHorizontal: 15, paddingBottom: 10 }}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        renderItem={({ item, index }) => {
-          const answerOptions = item.role === "assistant" ? extractAnswerOptions(item.text) : [];
-          
-          return (
-            <View style={{ marginVertical: 5 }}>
-              <View
-                style={{
-                  alignSelf: item.role === "user" ? "flex-end" : "flex-start",
-                  backgroundColor: item.role === "user" ? "#F79C4E" : "#E5E5EA",
-                  padding: 12,
-                  borderRadius: 15,
-                  maxWidth: "80%",
-                }}
-              >
-                <FormattedText 
-                  text={item.text} 
-                />
-              </View>
-              
-              {/* Answer Option Buttons for Assistant Messages */}
-              {answerOptions.length > 0 && (
-                <View style={{ flexDirection: "row", marginTop: 10, gap: 8, alignSelf: "flex-start", flexWrap: "wrap" }}>
-                  {answerOptions.map((option, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      onPress={() => send(option)}
-                      disabled={loading}
-                      style={{
-                        backgroundColor: "#F79C4E",
-                        paddingHorizontal: 16,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        opacity: loading ? 0.6 : 1,
-                      }}
-                    >
-                      <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>{option}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          );
-        }}
-        ListFooterComponent={
-          loading ? (
-            <View
-              style={{
-                alignSelf: "flex-start",
-                backgroundColor: "#E5E5EA",
-                padding: 10,
-                borderRadius: 15,
-                marginVertical: 10,
-              }}
-            >
-              <TypingDots />
-            </View>
-          ) : null
-        }
-      />
-
-      {/* Input - Fixed at bottom above tab bar */}
-      <View
-        style={{
-          backgroundColor: "#fff",
-          borderTopWidth: 1,
-          borderColor: "#ddd",
-          paddingHorizontal: 10,
-          paddingVertical: 15,
-          paddingBottom: 120,
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          {/* Text Input */}
-          <TextInput
-            value={message}
-            onChangeText={setMessage}
-            onSubmitEditing={handleSendMessage}
-            placeholder="Ask me anything about your pet's skin & care..."
-            placeholderTextColor="#999"
-            style={{
-              flex: 1,
-              backgroundColor: "#F5F5F5",
-              paddingHorizontal: 15,
-              paddingVertical: 12,
-              borderRadius: 25,
-              borderWidth: 1,
-              borderColor: "#DDD",
-              fontSize: 14,
-              minHeight: 45,
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+
+          {/* Header */}
+          <View style={{ paddingTop: 10, paddingBottom: 8, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#eee" }}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={{ fontSize: 24, fontWeight: "300" }}>←</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: "bold" }}>Chat with AI bot</Text>
+            <TouchableOpacity onPress={() => setInfoVisible(true)}>
+              <Text style={{ fontSize: 24 }}>⋯</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Info Modal Overlay */}
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={infoVisible}
+            onRequestClose={() => setInfoVisible(false)}
+          >
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+              <View style={{ width: '85%', backgroundColor: '#fff', borderRadius: 20, padding: 25, alignItems: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}>How to use Chatbot</Text>
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ fontSize: 15, color: '#444', marginBottom: 10 }}>• Ask questions about your pet's skin and general health.</Text>
+                  <Text style={{ fontSize: 15, color: '#444', marginBottom: 10 }}>• Use the suggestion buttons for faster responses.</Text>
+                  <Text style={{ fontSize: 15, color: '#444' }}>• Use the back arrow to exit the chat at any time.</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setInfoVisible(false)}
+                  style={{ backgroundColor: '#F79C4E', paddingHorizontal: 40, paddingVertical: 12, borderRadius: 25 }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>Got it!</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Greeting */}
+          <View style={{ alignItems: "center", paddingVertical: 10 }}>
+            <Image
+              source={require("../../assets/images/dogbot.png")}
+              style={{ width: 70, height: 70, borderRadius: 35, marginBottom: 5 }}
+            />
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>Good morning, Friend</Text>
+            <Text style={{ color: "#777", marginTop: 3, fontSize: 13 }}>
+              How can I help you and your pet?
+            </Text>
+          </View>
+
+          {/* Chat Messages */}
+          <FlatList
+            ref={flatListRef}
+            data={chat}
+            keyExtractor={(_, index) => index.toString()}
+            style={{ flex: 1, paddingHorizontal: 15 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            renderItem={({ item }) => {
+              const answerOptions = item.role === "assistant" ? extractAnswerOptions(item.text) : [];
+              return (
+                <View style={{ marginVertical: 5 }}>
+                  <View style={{
+                    alignSelf: item.role === "user" ? "flex-end" : "flex-start",
+                    backgroundColor: item.role === "user" ? "#F79C4E" : "#E5E5EA",
+                    padding: 12,
+                    borderRadius: 15,
+                    maxWidth: "80%",
+                  }}>
+                    <Text style={{ fontSize: 16, color: item.role === "user" ? "#fff" : "#000" }}>
+                      <FormattedText text={item.text} />
+                    </Text>
+                  </View>
+                  {answerOptions.length > 0 && (
+                    <View style={{ flexDirection: "row", marginTop: 10, gap: 8, alignSelf: "flex-start", flexWrap: "wrap" }}>
+                      {answerOptions.map((option, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          onPress={() => send(option)}
+                          disabled={loading}
+                          style={{ backgroundColor: "#F79C4E", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, opacity: loading ? 0.6 : 1 }}
+                        >
+                          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>{option}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
             }}
+            ListFooterComponent={loading ? (
+              <View style={{ alignSelf: "flex-start", backgroundColor: "#E5E5EA", padding: 10, borderRadius: 15, marginVertical: 10 }}>
+                <TypingDots />
+              </View>
+            ) : null}
           />
 
-          {/* Send Button */}
-          <TouchableOpacity
-            onPress={handleSendMessage}
-            disabled={loading}
-            style={{
-              minWidth: 45,
-              height: 45,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#F79C4E" />
-            ) : (
-              <Text style={{ fontSize: 20 }}>➤</Text>
-            )}
-          </TouchableOpacity>
+          {/* Input - Flush with bottom */}
+          <View style={{
+            backgroundColor: "#fff",
+            borderTopWidth: 1,
+            borderColor: "#ddd",
+            paddingHorizontal: 10,
+            paddingTop: 10,
+            paddingBottom: Platform.OS === "ios" ? 1 : 15,
+          }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <TextInput
+                value={message}
+                onChangeText={setMessage}
+                onSubmitEditing={handleSendMessage}
+                placeholder="Ask me anything..."
+                placeholderTextColor="#999"
+                style={{
+                  flex: 1,
+                  backgroundColor: "#F5F5F5",
+                  paddingHorizontal: 15,
+                  paddingVertical: 12,
+                  borderRadius: 25,
+                  borderWidth: 1,
+                  borderColor: "#DDD",
+                  fontSize: 14,
+                }}
+              />
+              <TouchableOpacity onPress={handleSendMessage} disabled={loading} style={{ minWidth: 45, height: 45, justifyContent: "center", alignItems: "center" }}>
+                {loading ? <ActivityIndicator size="small" color="#F79C4E" /> : <Text style={{ fontSize: 20 }}>➤</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

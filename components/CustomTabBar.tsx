@@ -14,14 +14,14 @@ const Colors = {
   textSecondary: '#888888',
   white: '#FFFFFF',
 };
-
-// --- MODIFICATION 2: Apply the BottomTabBarProps type to the function ---
-// We destructure the `state` prop, which tells us which route is active.
 export function CustomTabBar({ state }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  // `state.index` gives us the index of the currently active tab.
-  // `state.routes` is an array of all the routes in our tab bar.
   const activeRouteName = state.routes[state.index].name;
+
+  // Add this block to hide the bar on the chatbot screen
+  if (activeRouteName === 'chatbot') {
+    return null;
+  }
 
   return (
     <View style={[styles.navBarContainer, { paddingBottom: insets.bottom }]}>
