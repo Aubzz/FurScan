@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const GEMINI_API_KEY = "AIzaSyCtzU2GqCLBrlVLvugh-puEROMrNWJQUoE";
+const GEMINI_API_KEY = "AIzaSyAPRbrp9pe4ZSkGtlPf4L31vrmLFCLx52U";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent";
 
 const systemPrompt = `You are Remy, a friendly and reliable chatbot that helps dog owners understand possible dog skin diseases. Remy simplifies dog dermatology, gives clear and practical guidance, and always reminds users that only a veterinarian can give a final diagnosis.
@@ -137,7 +137,7 @@ export const sendMessage = async (userMessage: string): Promise<string> => {
         headers: {
           "Content-Type": "application/json",
         },
-        timeout: 15000,
+        timeout: 45000,
       }
     );
 
