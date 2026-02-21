@@ -4,7 +4,7 @@ import { Redirect } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 // Make sure the path is correct based on your file structure.
-// If you moved contexts to the root, it should be '../contexts/AuthContext'
+//If you moved contexts to the root, it should be '../contexts/AuthContext'
 import { useAuth } from '../contexts/AuthContext';
 
 const Index = () => {
