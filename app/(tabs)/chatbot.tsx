@@ -491,7 +491,7 @@ export default function ChatbotScreen() {
                   disabled={loading}
                   style={{ opacity: loading ? 0.5 : 1 }}
                 >
-                  <Text style={{ fontSize: 24 }}>⋯</Text>
+                  <Text style={{ fontSize: 24 }}>☰</Text>
                 </TouchableOpacity>
               )}
               {!isMobile && <View style={{ width: 24 }} />}
