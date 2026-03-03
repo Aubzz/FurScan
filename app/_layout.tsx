@@ -1,4 +1,5 @@
 // In app/_layout.tsx
+import 'react-native-gesture-handler';
 
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../contexts/AuthContext'; // 1. Import your new AuthProvider

@@ -14,7 +14,7 @@ export default function PetInfoScreen() {
   const ages = [
     { key: '1', value: "Under 1 year" },
     { key: '2', value: "1-3 years" },
-    { key: '3', value: "3-5 years" },
+    { key: '3', value: "4-5 years" },
     
   ];
   

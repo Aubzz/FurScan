@@ -5,22 +5,25 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Linking,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Linking,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+
+// Import your Auth Context hook
+import { useAuth } from '../../contexts/AuthContext';
 
 const DISEASE_LIBRARY: Record<string, any> = {
   "NO SKIN DISEASE PRESENT": {
-    category: "🟢 HEALTHY",
+    category: "HEALTHY",
     features: "Clear skin, no redness, fur loss, or scaling.",
     description: "TECHNICAL: No dermatological conditions detected.\n\nSIMPLE: Your pet's skin appears healthy with no visible issues.",
     firstAid: ["Continue regular grooming", "Monitor for changes during play", "Maintain flea/tick prevention"],
@@ -30,7 +33,7 @@ const DISEASE_LIBRARY: Record<string, any> = {
     severity: 'low'
   },
   "RINGWORM": {
-    category: "🟡 SCHEDULE VISIT",
+    category: "SCHEDULE VISIT",
     features: "Circular bald patches, scaling, hair loss.",
     description: "TECHNICAL: Dermatophytosis. A contagious fungal infection affecting hair shafts.\n\nSIMPLE: Fungal infection creating circular bald patches and hair loss.",
     firstAid: ["Limit contact with other pets", "Wash hands thoroughly", "Keep area clean and dry"],
@@ -40,7 +43,7 @@ const DISEASE_LIBRARY: Record<string, any> = {
     severity: 'moderate'
   },
   "FUNGAL INFECTION": {
-    category: "🟡 SCHEDULE VISIT",
+    category: "SCHEDULE VISIT",
     features: "Scaling, hair loss, redness.",
     description: "TECHNICAL: Fungal overgrowth on skin causing inflammation.\n\nSIMPLE: Fungal overgrowth causing scaling, hair loss, and redness.",
     firstAid: ["Keep area dry", "Avoid excessive bathing", "Wash and dry bedding regularly"],
@@ -50,7 +53,7 @@ const DISEASE_LIBRARY: Record<string, any> = {
     severity: 'moderate'
   },
   "DEMODECTIC MANGE": {
-    category: "🟡 SCHEDULE VISIT",
+    category: "SCHEDULE VISIT",
     features: "Hair loss, redness, mild scaling.",
     description: "TECHNICAL: Demodicosis. Overgrowth of mites naturally present in skin causing Alopecia.\n\nSIMPLE: Natural mites overpopulating, causing hair loss and redness.",
     firstAid: ["Prevent scratching", "Maintain good nutrition", "Avoid home insecticides"],
@@ -60,7 +63,7 @@ const DISEASE_LIBRARY: Record<string, any> = {
     severity: 'moderate'
   },
   "HYPERSENSITIVITY": {
-    category: "🟢 MONITOR",
+    category: "MONITOR",
     features: "Redness, mild scaling.",
     description: "TECHNICAL: Allergic reaction to food, shampoo, dust, or pollen causing Erythema.\n\nSIMPLE: Allergic reaction causing mild inflammation and redness.",
     firstAid: ["Gently clean with lukewarm water", "Keep skin dry", "Identify and remove allergen"],
@@ -70,7 +73,7 @@ const DISEASE_LIBRARY: Record<string, any> = {
     severity: 'low'
   },
   "DERMATITIS": {
-    category: "🟡 SCHEDULE VISIT",
+    category: "SCHEDULE VISIT",
     features: "Redness, scaling, hair loss.",
     description: "TECHNICAL: Skin inflammation related to allergy or infection. Often presents as Erythema.\n\nSIMPLE: General skin irritation causing redness, scaling, and hair loss.",
     firstAid: ["Keep area clean", "Prevent licking", "Use gentle shampoos"],
@@ -80,7 +83,7 @@ const DISEASE_LIBRARY: Record<string, any> = {
     severity: 'moderate'
   },
   "SARCOPTIC MANGE": {
-    category: "🔴 URGENT",
+    category: "URGENT",
     features: "Hair loss, redness, intense itching.",
     description: "TECHNICAL: Highly contagious mite infestation causing severe irritation. This is Zoonotic.\n\nSIMPLE: Contagious mites causing intense itching and painful skin.",
     firstAid: ["Isolate pet immediately", "Minimize handling", "Seek emergency care"],
@@ -112,8 +115,10 @@ export default function DiagnosisReportScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  
+  const { user } = useAuth(); 
 
-  const { condition, imageUri, summary, petName, petAge, petBreed, allResults, combinedResults } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     condition: string;
     imageUri: string;
     summary: string;
@@ -122,7 +127,10 @@ export default function DiagnosisReportScreen() {
     petBreed: string;
     allResults: string;
     combinedResults: string;
+    isReadOnly: string; 
   }>();
+
+  const { condition, imageUri, summary, petName, petAge, petBreed, allResults, isReadOnly } = params;
 
   const currentCondition = (condition as string)?.toUpperCase() || "NO SKIN DISEASE PRESENT";
   
@@ -219,6 +227,62 @@ export default function DiagnosisReportScreen() {
     }
   };
 
+  useEffect(() => {
+    const saveToHistory = async () => {
+      if (!user || isReadOnly === 'true') return;
+
+      try {
+        const formData = new FormData();
+        formData.append('file', {
+          uri: imageUri,
+          name: `scan_${Date.now()}.jpg`,
+          type: 'image/jpeg',
+        } as any);
+
+        const uploadResponse = await fetch('http://192.168.100.4:8080/api/upload-scan', {
+          method: 'POST',
+          body: formData,
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        const uploadData = await uploadResponse.json();
+        if (!uploadData.success) throw new Error("Image upload failed");
+
+        const permanentImageUrl = uploadData.imageUrl;
+        const fullName = `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim();
+
+        const payload = {
+          userName: fullName || 'Unknown User',
+          petName: petName || 'Unknown',
+          petBreed: petBreed || 'Unknown',
+          petAge: petAge || 'Unknown',
+          diagnosis: currentCondition,
+          severity: details.severity,
+          aiResults: aiResultsArray, 
+          userSymptoms: userSymptoms,
+          imageUri: permanentImageUrl 
+        };
+
+        const saveResponse = await fetch('http://192.168.100.4:8080/api/save-diagnosis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const saveData = await saveResponse.json();
+        if (saveData.success) {
+          console.log(`✅ Permanent record saved for ${fullName}!`);
+        }
+      } catch (error) {
+        console.error('❌ Error in permanent save process:', error);
+      }
+    };
+
+    if (currentCondition && imageUri) {
+      saveToHistory();
+    }
+  }, [user, currentCondition, isReadOnly, imageUri]);
+
   const handleReturnHome = () => {
     Alert.alert(
       "Exit Report",
@@ -296,7 +360,7 @@ export default function DiagnosisReportScreen() {
             </p>
 
             <hr/>
-            <p style="font-size:10px;color:#999;">Generated by DermaPaw on ${new Date().toLocaleDateString()}</p>
+            <p style="font-size:10px;color:#999;">Generated by FurScan on ${new Date().toLocaleDateString()}</p>
           </body>
         </html>
       `;
@@ -373,28 +437,30 @@ export default function DiagnosisReportScreen() {
             </View>
           </View>
 
-          <View style={styles.petProfileCard}>
-            <View style={styles.petProfileDetail}>
-              <MaterialCommunityIcons name="paw" size={16} color={triage.color} />
-              <Text style={styles.petProfileText}>{petName || "Pet Name"}</Text>
+          <View style={styles.patientInfoContainer}>
+            <Text style={styles.patientInfoLabel}>PATIENT INFORMATION</Text>
+            <Text style={styles.patientName}>{petName || "Pet Name"}</Text>
+            
+            <View style={styles.patientDetailsRow}>
+              <View style={styles.patientDetailColumn}>
+                <Text style={styles.patientDetailLabel}>BREED</Text>
+                <Text style={styles.patientDetailValue}>{petBreed || "Unknown"}</Text>
+              </View>
+              
+              <View style={styles.patientDetailColumn}>
+                <Text style={styles.patientDetailLabel}>AGE</Text>
+                <Text style={styles.patientDetailValue}>{petAge || "N/A"}</Text>
+              </View>
             </View>
-            <View style={styles.petProfileDivider} />
-            <View style={styles.petProfileDetail}>
-              <MaterialCommunityIcons name="dog" size={16} color="#666" />
-              <Text style={styles.petProfileText}>{petBreed || "Unknown"}</Text>
-            </View>
-            <View style={styles.petProfileDivider} />
-            <View style={styles.petProfileDetail}>
-              <MaterialCommunityIcons name="clock-outline" size={16} color="#666" />
-              <Text style={styles.petProfileText}>{petAge || "N/A"}</Text>
-            </View>
+            
+            <View style={styles.patientInfoBottomDivider} />
           </View>
         </View>
 
         <View style={styles.bodyContent}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="file-document-outline" size={20} color={triage.color} />
-            <Text style={styles.sectionTitle}>AI DETECTED LESIONS</Text>
+            <Text style={styles.sectionTitle}>DETECTED LESIONS</Text>
           </View>
           <View style={styles.lesionBox}>
             <Ionicons name="search" size={18} color="#666" />
@@ -403,7 +469,7 @@ export default function DiagnosisReportScreen() {
 
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="chart-pie" size={20} color="#666" />
-            <Text style={styles.sectionTitle}>AI CONFIDENCE BREAKDOWN</Text>
+            <Text style={styles.sectionTitle}>CONFIDENCE BREAKDOWN</Text>
           </View>
           <View style={styles.resultsContainer}>
             {aiResultsArray.length > 0 ? (
@@ -417,7 +483,7 @@ export default function DiagnosisReportScreen() {
                     <View
                       style={[
                         styles.progressBarFill,
-                        { width: `${res.score}%`, backgroundColor: index === 0 ? triage.color : '#E0E0E0' }
+                        { width: `${res.score}%`, backgroundColor: index === 0 ? triage.color : '#efb36d' }
                       ]}
                     />
                   </View>
@@ -430,7 +496,7 @@ export default function DiagnosisReportScreen() {
 
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="stethoscope" size={20} color={triage.color} />
-            <Text style={styles.sectionTitle}>QUESTIONNAIRE DIAGNOSIS</Text>
+            <Text style={styles.sectionTitle}>POSSIBLE CAUSES</Text>
           </View>
           <Text style={[styles.conditionName, { color: triage.color }]}>{currentCondition}</Text>
 
@@ -451,18 +517,16 @@ export default function DiagnosisReportScreen() {
             )}
           </View>
 
-          <View style={styles.divider} />
           {renderDescription()}
 
           {filteredGlossary.length > 0 && (
             <>
-              <View style={styles.divider} />
               <View style={styles.sectionHeader}>
                 <MaterialCommunityIcons name="book-open-page-variant" size={20} color="#666" />
                 <Text style={styles.sectionTitle}>GLOSSARY</Text>
               </View>
               <View style={styles.glossaryContainer}>
-                {filteredGlossary.map((item, index) => (
+                {filteredGlossary.map((item: GlossaryItem, index: number) => (
                   <View key={index} style={styles.glossaryItem}>
                     <Text style={styles.glossaryTerm}>
                       {item.term}:{' '}
@@ -474,7 +538,6 @@ export default function DiagnosisReportScreen() {
             </>
           )}
 
-          <View style={styles.divider} />
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="heart-flash" size={20} color="#D9534F" />
             <Text style={styles.sectionTitle}>CARE INSTRUCTIONS</Text>
@@ -488,7 +551,6 @@ export default function DiagnosisReportScreen() {
             ))}
           </View>
 
-          <View style={styles.divider} />
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="eye-outline" size={20} color="#666" />
             <Text style={styles.sectionTitle}>WATCH FOR CHANGES</Text>
@@ -504,48 +566,43 @@ export default function DiagnosisReportScreen() {
             <Text style={[styles.urgencyLabel, { color: triage.color }]}>RECOMMENDATION</Text>
             <Text style={styles.urgencyText}>{details.urgency}</Text>
           </View>
-        </View>
 
-        {needsProfessionalHelp && (
-          <View style={styles.actionSection}>
-            <Text style={styles.sectionTitle}>PROFESSIONAL CARE</Text>
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: "#4285F4" }]}
-                onPress={findNearbyVet}
-              >
-                <Ionicons name="map" size={20} color="white" />
-                <Text style={styles.actionBtnText}>Find Clinic</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: "#34A853" }]}
-                onPress={() => Linking.openURL('tel:911')}
-              >
-                <Ionicons name="call" size={20} color="white" />
-                <Text style={styles.actionBtnText}>Call Vet</Text>
-              </TouchableOpacity>
+          {needsProfessionalHelp && (
+            <View style={styles.actionSection}>
+              <View style={styles.sectionHeader}>
+                <MaterialCommunityIcons name="hospital-building" size={20} color="#F7924A" />
+                <Text style={styles.sectionTitle}>PROFESSIONAL CARE</Text>
+              </View>
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: "#F7924A" }]}
+                  onPress={findNearbyVet}
+                >
+                  <Ionicons name="map" size={20} color="white" />
+                  <Text style={styles.actionBtnText}>Find Clinic</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+          )}
+
+          <View style={styles.bottomButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.mainExportBtn, { backgroundColor: triage.color }]}
+              onPress={exportPDF}
+              disabled={loading}
+            >
+              <Ionicons name="download" size={20} color="white" />
+              <Text style={styles.mainExportBtnText}>{loading ? "Generating..." : "Download PDF Report"}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.homeBtn}
+              onPress={handleReturnHome}
+            >
+              <Ionicons name="home-outline" size={20} color="#666" />
+              <Text style={styles.homeBtnText}>Return to Home</Text>
+            </TouchableOpacity>
           </View>
-        )}
-
-        {/* BOTTOM ACTION BUTTONS */}
-        <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity
-            style={[styles.mainExportBtn, { backgroundColor: triage.color }]}
-            onPress={exportPDF}
-            disabled={loading}
-          >
-            <Ionicons name="download" size={20} color="white" />
-            <Text style={styles.mainExportBtnText}>{loading ? "Generating..." : "Download PDF Report"}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.homeBtn}
-            onPress={handleReturnHome}
-          >
-            <Ionicons name="home-outline" size={20} color="#666" />
-            <Text style={styles.homeBtnText}>Return to Home</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -565,26 +622,56 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   iconBtn: { padding: 8, borderRadius: 12, backgroundColor: '#F5F5F5' },
-  petProfileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9F9F9',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+  
+  // --- NEW PATIENT INFO STYLES ---
+  patientInfoContainer: {
     width: '85%',
-    alignSelf: 'center'
+    alignSelf: 'center',
+    marginTop: 25,
+    marginBottom: 5,
   },
-  petProfileDetail: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  petProfileText: { fontSize: 13, color: '#444', fontWeight: '700' },
-  petProfileDivider: { width: 1, height: 16, backgroundColor: '#DDD', marginHorizontal: 12 },
+  patientInfoLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#999',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  patientName: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#333',
+    marginBottom: 16,
+  },
+  patientDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
+  patientDetailColumn: {
+    flex: 1, 
+  },
+  patientDetailLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#999',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  patientDetailValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#555',
+  },
+  patientInfoBottomDivider: {
+    height: 1,
+    backgroundColor: '#EAEAEA',
+    marginTop: 18,
+  },
+  // -------------------------------
+
   heroSection: { alignItems: 'center', marginVertical: 15 },
   imageContainer: { position: 'relative' },
-  petImage: { width: 240, height: 240, borderRadius: 120, borderWidth: 6 },
+  petImage: { width: 240, height: 240, borderRadius: 30, borderWidth: 6 },  
   triageBadge: {
     position: 'absolute',
     bottom: 5,
@@ -602,7 +689,7 @@ const styles = StyleSheet.create({
   },
   triageLabelText: { color: 'white', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   bodyContent: { paddingHorizontal: 25 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 10 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, marginBottom: 8 },
   sectionTitle: { fontSize: 11, fontWeight: '800', color: '#999', letterSpacing: 1 },
   lesionBox: {
     flexDirection: 'row',
@@ -622,7 +709,7 @@ const styles = StyleSheet.create({
   progressBarFill: { height: '100%', borderRadius: 4 },
   emptyText: { fontSize: 13, color: '#BBB', fontStyle: 'italic' },
   conditionName: { fontSize: 26, fontWeight: '900', marginBottom: 15 },
-  symptomContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 },
+  symptomContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 5 }, 
   symptomPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -635,11 +722,10 @@ const styles = StyleSheet.create({
     borderColor: '#DFF0DF'
   },
   symptomText: { fontSize: 12, color: '#2E7D32', fontWeight: '600' },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 20 },
-  descCard: { padding: 18, borderRadius: 20, marginBottom: 15 },
+  descCard: { padding: 18, borderRadius: 20, marginBottom: 10 }, 
   descHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   descLabel: { fontSize: 12, fontWeight: '800' },
-  technicalCard: { backgroundColor: '#F4F7FA' },
+  technicalCard: { backgroundColor: '#F4F7FA', borderRadius: 10, marginTop: 10 },  
   simpleCard: { backgroundColor: '#FFF9F5' },
   technicalLabel: { color: '#2C3E50' },
   simpleLabel: { color: '#F7924A' },
@@ -652,27 +738,24 @@ const styles = StyleSheet.create({
   urgencyBox: { marginTop: 15, padding: 15, borderRadius: 12, borderLeftWidth: 4, backgroundColor: '#F9F9F9' },
   urgencyLabel: { fontSize: 10, fontWeight: 'bold', marginBottom: 4 },
   urgencyText: { fontSize: 14, color: '#333', fontWeight: '600' },
-  glossaryContainer: { backgroundColor: '#F9F9F9', padding: 15, borderRadius: 15 },
-  glossaryItem: { marginBottom: 8 },
-  glossaryTerm: { fontWeight: 'bold', fontSize: 14, color: '#444' },
-  glossaryDef: { fontWeight: 'normal', color: '#666', lineHeight: 18 },
-  actionSection: { marginHorizontal: 25, marginTop: 20 },
-  actionRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  actionSection: { marginTop: 5 },
+  actionRow: { flexDirection: 'row', marginTop: 10 },
   actionBtn: { flex: 1, flexDirection: 'row', padding: 16, borderRadius: 15, justifyContent: 'center', alignItems: 'center', gap: 10 },
-  actionBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  
-  // NEW BOTTOM BUTTON STYLES
-  bottomButtonsContainer: { paddingHorizontal: 25, marginTop: 10, gap: 12 },
+  actionBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  bottomButtonsContainer: { marginTop: 30, gap: 12 },
   mainExportBtn: { padding: 18, borderRadius: 15, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
   mainExportBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
   homeBtn: { padding: 18, borderRadius: 15, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#DDD', backgroundColor: '#FFF' },
   homeBtnText: { color: '#666', fontWeight: 'bold', fontSize: 16 },
-
   warningOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   warningCard: { width: '85%', backgroundColor: 'white', borderRadius: 30, padding: 30, alignItems: 'center' },
   warningIconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FDEDED', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   warningTitle: { fontSize: 22, fontWeight: '900', color: '#1A1A1A', marginBottom: 10 },
   warningDesc: { textAlign: 'center', color: '#666', lineHeight: 22, marginBottom: 25 },
   warningBtn: { backgroundColor: '#D9534F', paddingHorizontal: 40, paddingVertical: 15, borderRadius: 30 },
-  warningBtnText: { color: 'white', fontWeight: '800', fontSize: 16 }
+  warningBtnText: { color: 'white', fontWeight: '800', fontSize: 16 },
+  glossaryContainer: { backgroundColor: '#F9F9F9', padding: 15, borderRadius: 15 },
+  glossaryItem: { marginBottom: 8 },
+  glossaryTerm: { fontWeight: 'bold', fontSize: 14, color: '#444' },
+  glossaryDef: { fontWeight: 'normal', color: '#666', lineHeight: 18 }
 });

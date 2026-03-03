@@ -23,17 +23,16 @@ const Colors = {
   textPrimary: '#212529',
   textSecondary: '#6c757d',
   primaryOrange: '#F79C4E',
-  inputDefaultBorder: '#E0E0E0', // A neutral gray for the default border
+  inputDefaultBorder: '#E0E0E0', 
   error: '#D32F2F',
   white: '#FFFFFF',
 };
 
 const API_URL = Platform.select({
   web: 'http://localhost:8080',
-  default: 'http://192.168.1.49:8080', // Replace with your IP
+  default: 'http://192.168.100.4:8080', 
 });
 
-// --- Main Screen Component ---
 const LoginScreen = () => {
   const router = useRouter();
   const { login } = useAuth();
@@ -43,10 +42,9 @@ const LoginScreen = () => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // 1. Add state to track the focused input
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
+  // --- UPDATED NAVIGATION LOGIC ---
   const handleLoginPress = async () => {
     if (!email || !password) {
       setError('Please enter both email and password.');
@@ -61,8 +59,14 @@ const LoginScreen = () => {
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
+      
       if (response.ok) {
-        login(data.user, data.token);
+        // 1. Update the authentication context with user data and token
+        await login(data.user, data.token);
+        
+        // 2. Navigate to the start screen (HomeScreen)
+        // Adjust the path below to match your exact file structure
+        router.replace('/Screens/StartScreen'); 
       } else {
         setError(data.msg || 'Invalid credentials. Please try again.');
       }
@@ -99,7 +103,6 @@ const LoginScreen = () => {
             <Text style={styles.subtitle}>Login to your account.</Text>
 
             <Text style={styles.inputLabel}>Email</Text>
-            {/* 2. Apply conditional styling and event handlers */}
             <View style={[ styles.inputWrapper, focusedInput === 'email' && styles.inputFocused ]}>
               <TextInput
                 style={styles.input}
@@ -115,7 +118,6 @@ const LoginScreen = () => {
             </View>
 
             <Text style={styles.inputLabel}>Password</Text>
-            {/* 3. Apply conditional styling and event handlers */}
             <View style={[ styles.inputWrapper, focusedInput === 'password' && styles.inputFocused ]}>
               <TextInput
                 style={styles.input}
@@ -169,10 +171,7 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,78 +181,29 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 15,
   },
-  backButton: {
-    width: 40,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: Colors.white,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  keyboardAvoidingContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 250, // Give enough space for the scroll to avoid the image
-  },
-  formContainer: {
-    paddingHorizontal: 25,
-    paddingTop: 30,
-  },
-  welcomeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: Colors.textPrimary,
-    marginBottom: 8,
-    fontWeight: '500',
-  },
+  backButton: { width: 40, alignItems: 'center' },
+  headerTitle: { color: Colors.white, fontSize: 20, fontWeight: 'bold' },
+  keyboardAvoidingContainer: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 250 },
+  formContainer: { paddingHorizontal: 25, paddingTop: 30 },
+  welcomeContainer: { flexDirection: 'row', justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', color: Colors.textPrimary, textAlign: 'center' },
+  subtitle: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', marginBottom: 40 },
+  inputLabel: { fontSize: 14, color: Colors.textPrimary, marginBottom: 8, fontWeight: '500' },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.inputDefaultBorder, // Use the new gray color
+    borderColor: Colors.inputDefaultBorder,
     borderRadius: 15,
     paddingHorizontal: 15,
     marginBottom: 20,
   },
-  // 4. Add the focused style
-  inputFocused: {
-    borderColor: Colors.primaryOrange,
-    borderWidth: 1.5,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    fontSize: 16,
-    color: Colors.textPrimary,
-  },
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: Colors.primaryOrange,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  inputFocused: { borderColor: Colors.primaryOrange, borderWidth: 1.5 },
+  input: { flex: 1, height: 50, fontSize: 16, color: Colors.textPrimary },
+  forgotPasswordButton: { alignSelf: 'flex-end', marginBottom: 20 },
+  forgotPasswordText: { color: Colors.primaryOrange, fontSize: 14, fontWeight: '600' },
   loginButton: {
     backgroundColor: Colors.primaryOrange,
     paddingVertical: 15,
@@ -262,35 +212,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 50,
   },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: Colors.error,
-    textAlign: 'center',
-    marginBottom: 15,
-    fontSize: 14,
-  },
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 25,
-  },
-  signupText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  signupLink: {
-    color: Colors.primaryOrange,
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  buttonDisabled: { opacity: 0.7 },
+  loginButtonText: { color: Colors.white, fontSize: 18, fontWeight: 'bold' },
+  errorText: { color: Colors.error, textAlign: 'center', marginBottom: 15, fontSize: 14 },
+  signupContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 25 },
+  signupText: { fontSize: 16, color: Colors.textSecondary },
+  signupLink: { color: Colors.primaryOrange, fontWeight: 'bold', fontSize: 16 },
   bottomImage: {
     width: '100%',
     height: 250,

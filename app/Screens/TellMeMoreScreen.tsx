@@ -28,26 +28,116 @@ const DOCTOR_IMAGES: any = {
 };
 
 const QUESTIONS: any = {
-  Q1: { text: "Is there visible hair loss or thinning fur?", yes: "Q2", no: "Q6", img: "dog1", hint: "Check if the skin is visible through the coat or if there are completely bald patches." },
-  Q2: { text: "Are the bald areas circular or ring-shaped?", yes: "Q3", no: "Q4", img: "dog2", hint: "Look for hair loss that forms a distinct circle, like a coin or a target." },
-  Q3: { text: "Are the patches scaly, crusty, or with red edges?", yes: "Q3a", no: "Q4b", img: "dog3", hint: "Check if the skin looks like it's peeling or has a raised, red outer border." },
-  Q3a: { text: "Are other pets or humans in the house showing red, itchy skin spots?", yes: "RINGWORM", no: "Q4b", img: "dog4", hint: "Ringworm is contagious; check if anyone else has developed circular rashes." },
-  Q4b: { text: "Is the skin surface flaking or the patch spreading slowly?", yes: "FUNGAL INFECTION", no: "Q4", img: "dog5", hint: "Look for white flakes (like dandruff) that seem to stay within the bald area." },
-  Q4: { text: "Is the hair loss paired with frequent scratching or biting?", yes: "Q5", no: "DEMODECTIC MANGE", img: "dog6", hint: "Demodectic mange often causes hair loss without the pet appearing 'itchy' at first." },
-  Q5: { text: "Is the scratching significantly more intense during the night?", yes: "SARCOPTIC MANGE", no: "Q6", img: "dog7", hint: "Sarcoptic mites are often more active at night, causing the pet to wake up to scratch." },
-  Q6: { text: "Is the pet frequently scratching, licking, or chewing their skin?", yes: "Q7", no: "Q9", img: "dog8", hint: "Look for 'obsessive' grooming or your pet acting restless/unable to stay still." },
-  Q7: { text: "Did the scratching start after a change in food, shampoo, or environment?", yes: "HYPERSENSITIVITY", no: "Q8", img: "dog9", hint: "Think back to new laundry detergents, lawn treatments, or a new bag of kibble." },
-  Q7a: { text: "Does the pet specifically chew their paws or rub their face on the floor?", yes: "HYPERSENSITIVITY", no: "Q8", img: "dog10", hint: "Paws and face rubbing are classic visible signs of environmental or food sensitivities." },
-  Q8: { text: "Is the skin red, swollen, or warm to the touch?", yes: "Q8b", no: "Q9", img: "dog11", hint: "Gently touch the skin; inflamed areas often feel warmer than the rest of the pet's body." },
-  Q8b: { text: "Is there any pus, oozing, or a 'musty' odor?", yes: "DERMATITIS", no: "Q9", img: "dog12", hint: "Check for wet sores or a smell that persists even after a bath." },
-  Q9: { text: "Are the spots mainly on the face, ears, or paws?", yes: "Q10", no: "Q11", img: "dog1", hint: "Mange and allergies often start on the extremities and the muzzle." },
-  Q10: { text: "Are there small red bumps or pimples visible on the belly or chest?", yes: "Q11", no: "Q11", img: "dog2", hint: "Look for 'pustules'—tiny raised white or red bumps on the stomach." },
-  Q11: { text: "Does the skin feel thickened, leathery, or has it turned black/grey?", yes: "Q12", no: "Q13", img: "dog3", hint: "Chronic irritation causes skin to thicken like 'elephant skin' and change color." },
-  Q12: { text: "Is the skin surface notably dry, scaly, or covered in hard crusts?", yes: "Q13", no: "Q13", img: "dog4", hint: "Check for a 'sandpaper' texture or thick yellow/brown crusts on the skin." },
-  Q13: { text: "Are the affected areas getting larger or appearing on new parts of the body?", yes: "Q14", no: "Q14", img: "dog5", hint: "Note if a small spot on a leg has moved to the chest or back over the last few days." },
-  Q14: { text: "Is the pet currently on a regular flea and parasite preventative?", yes: "Q15", no: "Q15", img: "dog6", hint: "This helps rule out flea bites vs. clinical hypersensitivity or mange." },
-  Q15: { text: "Are these skin changes happening for the first time?", yes: "Q16", no: "Q16", img: "dog7", hint: "Consider if this is a new issue or something that returns every year." },
-  Q16: { text: "Has the pet recently been in contact with stray animals or a boarding kennel?", yes: "FINISH", no: "FINISH", img: "dog8", hint: "Exposure to other animals increases the likelihood of Mange or Ringworm." },
+  Q1: { 
+    text: "Is there visible hair loss or thinning fur?", 
+    statement: "Visible hair loss or thinning fur.",
+    yes: "Q2", no: "Q6", img: "dog1", hint: "Check if the skin is visible through the coat or if there are completely bald patches." 
+  },
+  Q2: { 
+    text: "Are the bald areas circular or ring-shaped?", 
+    statement: "Bald areas are circular or ring-shaped.",
+    yes: "Q3", no: "Q4", img: "dog2", hint: "Look for hair loss that forms a distinct circle, like a coin or a target." 
+  },
+  Q3: { 
+    text: "Are the patches scaly, crusty, or with red edges?", 
+    statement: "Skin patches are scaly, crusty, or have red edges.",
+    yes: "Q3a", no: "Q4b", img: "dog3", hint: "Check if the skin looks like it's peeling or has a raised, red outer border." 
+  },
+  Q3a: { 
+    text: "Are other pets or humans in the house showing red, itchy skin spots?", 
+    statement: "Other humans or pets in household show similar red, itchy spots.",
+    yes: "RINGWORM", no: "Q4b", img: "dog4", hint: "Ringworm is highly contagious; check if anyone else has developed circular rashes." 
+  },
+  Q4b: { 
+    text: "Does the skin feel greasy, or is there a strong 'musty' or sweet odor?", 
+    statement: "Skin feels greasy or emits a musty/sweet odor.",
+    yes: "FUNGAL INFECTION", no: "Q4", img: "dog5", hint: "Fungal (yeast) infections often smell like old gym socks or corn chips and make the coat greasy." 
+  },
+  Q4: { 
+    text: "Is the hair loss paired with frequent scratching or biting?", 
+    statement: "Hair loss is accompanied by frequent scratching or biting.",
+    yes: "Q5", no: "DEMODECTIC MANGE", img: "dog6", hint: "Demodectic mange often causes bald spots (especially on the face/legs) without making the pet itchy at first." 
+  },
+  Q5: { 
+    text: "Is the scratching significantly more intense at night, or focused on the ear margins/elbows?", 
+    statement: "Scratching is intense at night or focused on ear margins/elbows.",
+    yes: "SARCOPTIC MANGE", no: "Q6", img: "dog7", hint: "Sarcoptic mites cause intense, frantic itching that often wakes the pet up from sleep." 
+  },
+  Q6: { 
+    text: "Is the pet frequently scratching, licking, or chewing their skin?", 
+    statement: "Frequent scratching, licking, or chewing of the skin.",
+    yes: "Q7", no: "Q9", img: "dog8", hint: "Look for 'obsessive' grooming or your pet acting restless." 
+  },
+  Q7: { 
+    text: "Does the pet specifically chew their paws, rub their face on the floor, or have ear issues?", 
+    statement: "Exhibits paw chewing, face rubbing, or ear issues.",
+    yes: "HYPERSENSITIVITY", no: "Q8", img: "dog9", hint: "Paw licking and face rubbing are the most common visible signs of environmental or food allergies." 
+  },
+  Q7a: { 
+    text: "Did the scratching start after a change in food, shampoo, or season?", 
+    statement: "Symptoms started after a change in food, shampoo, or season.",
+    yes: "HYPERSENSITIVITY", no: "Q8", img: "dog10", hint: "Think back to new treats, laundry detergents, or spring pollen." 
+  },
+  Q8: { 
+    text: "Is the skin red, swollen, or warm to the touch?", 
+    statement: "Skin is red, swollen, or warm to the touch.",
+    yes: "Q8b", no: "Q9", img: "dog11", hint: "Gently touch the skin; inflamed areas often feel warmer than the rest of the pet's body." 
+  },
+  Q8b: { 
+    text: "Are there wet sores, oozing, pus, or yellow crusts?", 
+    statement: "Presence of wet sores, oozing, pus, or yellow crusts.",
+    yes: "DERMATITIS", no: "Q9", img: "dog12", hint: "Bacterial dermatitis often causes wet, weeping sores or sticky yellow crusts." 
+  },
+  Q9: { 
+    text: "Are the spots mainly on the face, ears, or paws?", 
+    statement: "Lesions are localized mainly on the face, ears, or paws.",
+    yes: "Q10", no: "Q11", img: "dog1", hint: "Mange, yeast, and allergies often start on the extremities and the muzzle." 
+  },
+  Q10: { 
+    text: "Are there small red bumps or pimples visible on the belly or chest?", 
+    statement: "Small red bumps or pimples visible on belly or chest.",
+    yes: "Q11", no: "Q11", img: "dog2", hint: "Look for 'pustules'—tiny raised white or red bumps. These are classic signs of bacterial infection." 
+  },
+  Q11: { 
+    text: "Does the skin feel thickened, leathery, or has it turned black/grey?", 
+    statement: "Skin feels thickened, leathery, or has turned black/grey.",
+    yes: "Q12", no: "Q13", img: "dog3", hint: "Chronic irritation (especially fungal yeast) causes skin to thicken like 'elephant skin' and turn dark." 
+  },
+  Q12: { 
+    text: "Is the skin surface notably dry, scaly, or covered in hard crusts?", 
+    statement: "Skin surface is notably dry, scaly, or hard-crusted.",
+    yes: "Q13", no: "Q13", img: "dog4", hint: "Check for a 'sandpaper' texture or thick yellow/brown crusts on the skin." 
+  },
+  Q13: { 
+    text: "Are the affected areas getting larger or appearing on new parts of the body?", 
+    statement: "Affected areas are spreading to new parts of the body.",
+    yes: "Q14", no: "Q14", img: "dog5", hint: "Note if a small spot on a leg has moved to the chest or back over the last few days." 
+  },
+  Q14: { 
+    text: "Is the pet currently on a regular flea and parasite preventative?", 
+    statement: "Pet is currently on a regular flea/parasite preventative.",
+    yes: "Q15", no: "Q15", img: "dog6", hint: "This helps rule out standard flea bites." 
+  },
+  Q15: { 
+    text: "Are these skin changes happening for the first time?", 
+    statement: "These skin changes are occurring for the first time.",
+    yes: "Q16", no: "Q16", img: "dog7", hint: "Allergies and yeast often return every year (seasonal)." 
+  },
+  Q16: { 
+    text: "Has the pet recently been in contact with stray animals or a boarding kennel?", 
+    statement: "Recent contact with stray animals or boarding kennels.",
+    yes: "Q17", no: "Q17", img: "dog8", hint: "Exposure to other animals increases the likelihood of contagious conditions like Sarcoptic Mange or Ringworm." 
+  },
+  Q17: { 
+    text: "If you gently rub the edges of the pet's ear flaps, does their back leg immediately start thumping?", 
+    statement: "Positive pinna-pedal reflex (back leg thumps when ear is rubbed).",
+    yes: "Q18", no: "Q18", img: "dog10", hint: "This is called the 'pinna-pedal reflex' and is a very strong indicator of Sarcoptic Mange mites." 
+  },
+  Q18: { 
+    text: "Are the insides of the ears red, smelly, or producing a dark, waxy discharge?", 
+    statement: "Insides of ears are red, smelly, or have a dark discharge.",
+    yes: "FINISH", no: "FINISH", img: "dog11", hint: "Skin allergies and yeast infections frequently cause secondary ear infections." 
+  }
 };
 
 const SKIP_QUESTIONS_MAP: { [key: string]: string[] } = {
@@ -56,8 +146,7 @@ const SKIP_QUESTIONS_MAP: { [key: string]: string[] } = {
   "circular bald patches": ["Q1", "Q2"],
   "redness": ["Q8"],
   "inflammation": ["Q8"],
-  "scaling": ["Q3", "Q12"],
-  "crusting": ["Q3", "Q12"],
+  "scaling": ["Q3",],
   "hyperpigmentation": ["Q11"],
 };
 
@@ -98,18 +187,30 @@ export default function TellMeMoreScreen() {
     setAutoDetected([...new Set(detectedList)]);
     setAnswers(initialAnswers);
 
+    let startId = "Q1";
     if (uniqueSkips.includes("Q1")) {
-      setQuestionId(findNextNonSkipped("Q1", "yes", uniqueSkips));
+      startId = findNextNonSkipped("Q1", "yes", uniqueSkips);
+    }
+
+    const endpoints = ["FINISH"]; 
+    if (endpoints.includes(startId)) {
+      calculateResult(initialAnswers, startId);
+    } else {
+      setQuestionId(startId);
     }
   }, [allResults]);
 
   const findNextNonSkipped = (currentId: string, answer: 'yes' | 'no', skips: string[]): string => {
-    let nextId = QUESTIONS[currentId][answer];
+    let nextId = QUESTIONS[currentId]?.[answer];
     let safety = 0;
+    
     while (skips.includes(nextId) && safety < 15) {
       const autoNext = QUESTIONS[nextId]?.yes; 
-      if (!autoNext || !QUESTIONS[autoNext]) break;
-      nextId = autoNext;
+      nextId = autoNext; 
+      
+      if (!nextId || !QUESTIONS[nextId]) {
+        break; 
+      }
       safety++;
     }
     return nextId;
@@ -147,44 +248,58 @@ export default function TellMeMoreScreen() {
         "HYPERSENSITIVITY": "Hypersensitivity", "DERMATITIS": "Dermatitis" 
     };
 
-    // Weighted Fallback System
+    let isJuvenile = false;
+    if (petAge) {
+      const ageString = petAge.toString().toLowerCase();
+      if (ageString.includes("month") || ageString === "1" || ageString === "1 yr" || ageString.includes("puppy")) {
+        isJuvenile = true;
+      }
+    }
+
     const scores: any = {
-      "Ringworm": (allAnswers.Q2 === 'yes' ? 2 : 0) + (allAnswers.Q3 === 'yes' ? 2 : 0) + (allAnswers.Q3a === 'yes' ? 3 : 0),
-      "Fungal Infection": (allAnswers.Q4b === 'yes' ? 3 : 0) + (allAnswers.Q3 === 'yes' ? 1 : 0),
-      "Demodectic Mange": (allAnswers.Q1 === 'yes' ? 1 : 0) + (allAnswers.Q4 === 'no' ? 3 : 0),
-      "Sarcoptic Mange": (allAnswers.Q5 === 'yes' ? 4 : 0) + (allAnswers.Q4 === 'yes' ? 1 : 0),
-      "Hypersensitivity": (allAnswers.Q7 === 'yes' ? 3 : 0) + (allAnswers.Q7a === 'yes' ? 3 : 0),
-      "Dermatitis": (allAnswers.Q8 === 'yes' ? 2 : 0) + (allAnswers.Q8b === 'yes' ? 4 : 0)
+      "Ringworm": (allAnswers.Q2 === 'yes' ? 3 : 0) + (allAnswers.Q3 === 'yes' ? 2 : 0) + (allAnswers.Q3a === 'yes' ? 4 : 0) + (allAnswers.Q16 === 'yes' ? 1 : 0),
+      "Fungal Infection": (allAnswers.Q4b === 'yes' ? 4 : 0) + (allAnswers.Q11 === 'yes' ? 3 : 0) + (allAnswers.Q9 === 'yes' ? 1 : 0) + (allAnswers.Q18 === 'yes' ? 2 : 0),
+      "Demodectic Mange": (allAnswers.Q1 === 'yes' ? 2 : 0) + (allAnswers.Q4 === 'no' ? 4 : 0) + (allAnswers.Q9 === 'yes' ? 2 : 0) + (isJuvenile ? 3 : 0),
+      "Sarcoptic Mange": (allAnswers.Q5 === 'yes' ? 5 : 0) + (allAnswers.Q4 === 'yes' ? 2 : 0) + (allAnswers.Q16 === 'yes' ? 2 : 0) + (allAnswers.Q17 === 'yes' ? 5 : 0),
+      "Hypersensitivity": (allAnswers.Q7 === 'yes' ? 4 : 0) + (allAnswers.Q7a === 'yes' ? 3 : 0) + (allAnswers.Q6 === 'yes' ? 2 : 0) + (allAnswers.Q18 === 'yes' ? 2 : 0),
+      "Dermatitis": (allAnswers.Q8 === 'yes' ? 2 : 0) + (allAnswers.Q8b === 'yes' ? 4 : 0) + (allAnswers.Q10 === 'yes' ? 4 : 0) + (allAnswers.Q12 === 'yes' ? 1 : 0)
     };
 
-    const hasAnyYes = Object.values(allAnswers).includes('yes');
-    const bestMatch = Object.entries(scores).reduce((a: any, b: any) => a[1] > b[1] ? a : b)[0];
+    const maxScore = Math.max(...(Object.values(scores) as number[]));
+    
+    let bestMatch = "Inconclusive / Healthy Appearance";
+    if (maxScore > 0) {
+      bestMatch = Object.keys(scores).find(key => scores[key] === maxScore) || bestMatch;
+    }
     
     let winner = diagnosisMap[finalPath] || bestMatch;
-    let confidence = hasAnyYes ? Math.min(Math.round(((scores[winner] || 1) / 7) * 100), 95) : 0;
+    
+    const hasAnyYes = Object.values(allAnswers).includes('yes');
+    let confidence = hasAnyYes && maxScore > 0 ? Math.min(Math.round((maxScore / 7) * 100), 95) : 0;
 
-    if (!hasAnyYes) {
+    if (!hasAnyYes || maxScore === 0) {
         winner = "Inconclusive / Healthy Appearance";
         confidence = 0;
     }
 
     const summary = Object.keys(allAnswers)
       .filter(k => allAnswers[k] === 'yes' && QUESTIONS[k])
-      .map(k => QUESTIONS[k].text);
+      .map(k => QUESTIONS[k].statement); // <--- Using statement here!
     
+    // NAVIGATION UPDATE: Passing isReadOnly: 'false' to trigger auto-save in report screen
     router.push({ 
       pathname: '/Screens/DiagnosisReportScreen' as any, 
       params: { 
         condition: winner, 
         confidence: confidence.toString(),
         summary: JSON.stringify(summary), 
-        imageUri, petName, petAge, petBreed, allResults 
+        imageUri, petName, petAge, petBreed, allResults,
+        isReadOnly: 'false' // Ensure auto-save runs
       } 
     });
   };
 
-  // Determine which stepper dots to light up (progress bar)
-  const currentStep = Math.min(Math.floor(history.length / 3) + 1, 4);
+  const currentStep = Math.min(Math.floor(history.length / 4) + 1, 4);
 
   return (
     <SafeAreaView style={styles.container}>
