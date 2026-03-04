@@ -48,3 +48,111 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+```
+DermaPaw
+├─ app
+│  ├─ (tabs)
+│  │  ├─ chatbot.tsx
+│  │  ├─ home.tsx
+│  │  ├─ profile.tsx
+│  │  ├─ search.tsx
+│  │  └─ _layout.tsx
+│  ├─ index.tsx
+│  ├─ Screens
+│  │  ├─ AddPet.tsx
+│  │  ├─ CreateAccount.tsx
+│  │  ├─ ForgotPassword.tsx
+│  │  ├─ Login.tsx
+│  │  ├─ SetNewPassword.tsx
+│  │  ├─ settings
+│  │  │  ├─ AboutUs.tsx
+│  │  │  ├─ FAQ.tsx
+│  │  │  ├─ GeneratePDF.tsx
+│  │  │  ├─ PrivacyPolicy.tsx
+│  │  │  └─ ViewPastScans.tsx
+│  │  ├─ Settings.tsx
+│  │  ├─ Signup.tsx
+│  │  ├─ StartScreen.tsx
+│  │  ├─ VerifyOtp.tsx
+│  │  └─ ViewPet.tsx
+│  └─ _layout.tsx
+├─ app.json
+├─ assets
+│  ├─ fonts
+│  │  ├─ Poppins-Black.ttf
+│  │  ├─ Poppins-BlackItalic.ttf
+│  │  ├─ Poppins-Bold.ttf
+│  │  ├─ Poppins-BoldItalic.ttf
+│  │  ├─ Poppins-ExtraBold.ttf
+│  │  ├─ Poppins-ExtraBoldItalic.ttf
+│  │  ├─ Poppins-ExtraLight.ttf
+│  │  ├─ Poppins-ExtraLightItalic.ttf
+│  │  ├─ Poppins-Italic.ttf
+│  │  ├─ Poppins-Light.ttf
+│  │  ├─ Poppins-LightItalic.ttf
+│  │  ├─ Poppins-Medium.ttf
+│  │  ├─ Poppins-MediumItalic.ttf
+│  │  ├─ Poppins-Regular.ttf
+│  │  ├─ Poppins-SemiBold.ttf
+│  │  ├─ Poppins-SemiBoldItalic.ttf
+│  │  ├─ Poppins-Thin.ttf
+│  │  └─ Poppins-ThinItalic.ttf
+│  └─ images
+│     ├─ apple-logo.png
+│     ├─ corgis.png
+│     ├─ facebook-logo.png
+│     ├─ favicon.png
+│     ├─ forgot-password-cat.png
+│     ├─ furemedy-logo.png
+│     ├─ google-logo.png
+│     ├─ happy-cat.png
+│     ├─ icon.png
+│     ├─ login-dogs-illustration.png
+│     ├─ partial-react-logo.png
+│     ├─ react-logo.png
+│     ├─ react-logo@2x.png
+│     ├─ react-logo@3x.png
+│     ├─ sad-cat.png
+│     ├─ set-password-illustration.png
+│     ├─ splash-icon.png
+│     └─ start-illustration.png
+├─ components
+│  ├─ ConfirmationModal.tsx
+│  ├─ CustomTabBar.tsx
+│  ├─ external-link.tsx
+│  ├─ haptic-tab.tsx
+│  ├─ hello-wave.tsx
+│  ├─ parallax-scroll-view.tsx
+│  ├─ PetInfoCard.tsx
+│  ├─ SuccesModal.tsx
+│  ├─ themed-text.tsx
+│  ├─ themed-view.tsx
+│  └─ ui
+│     ├─ collapsible.tsx
+│     ├─ icon-symbol.ios.tsx
+│     └─ icon-symbol.tsx
+├─ constants
+│  ├─ api.ts
+│  └─ theme.ts
+├─ contexts
+│  └─ AuthContext.tsx
+├─ eas.json
+├─ eslint.config.js
+├─ hooks
+│  ├─ use-color-scheme.ts
+│  ├─ use-color-scheme.web.ts
+│  └─ use-theme-color.ts
+├─ package-lock.json
+├─ package.json
+├─ README.md
+├─ scripts
+│  └─ reset-project.js
+├─ server
+│  ├─ migrations
+│  └─ seeds
+├─ tsconfig.json
+└─ utils
+   └─ tokenStorage.js
+
+```

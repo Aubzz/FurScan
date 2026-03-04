@@ -1,9 +1,12 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import axios from 'axios';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
   Image,
-  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -12,6 +15,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import PetInfoCard from '../../components/PetInfoCard';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Colors = {
@@ -24,15 +30,96 @@ const Colors = {
   borderColor: '#E0E0E0',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://10.151.237.144:8080', // IMPORTANT: Replace with your computer's IP
-});
+type Pet = {
+  id: number;
+  first_name: string;
+  species: string;
+  breed: string | null;
+  pet_image_path: string | null;
+};
 
 const HomeScreen = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [isLoadingPets, setIsLoadingPets] = useState(true);
+  const [petsError, setPetsError] = useState<string | null>(null);
+  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [petToDelete, setPetToDelete] = useState<Pet | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchPets = async () => {
+        if (!token) {
+          setPets([]);
+          setIsLoadingPets(false);
+          return;
+        }
+
+        setIsLoadingPets(true);
+        setPetsError(null);
+        try {
+          const response = await fetch(`${API_URL}/api/pets/mine`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch pets.');
+          }
+
+          const data: Pet[] = await response.json();
+          
+          setPets(data);
+
+        } catch (error: any) {
+          setPetsError(error.message);
+        } finally {
+          setIsLoadingPets(false);
+        }
+      };
+
+      fetchPets();
+    }, [token]) // Dependency array ensures it refetches if the user logs in/out
+  );
+
+  const handleEdit = (petToEdit: Pet) => {
+    router.push({
+      pathname: '/Screens/AddPet',
+      params: { petToEdit: JSON.stringify(petToEdit) }
+    });
+  };
+
+  const handleDelete = (pet: Pet) => {
+    setPetToDelete(pet);
+    setDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!petToDelete) return;
+
+     try {
+      await axios.delete(`${API_URL}/api/pets/${petToDelete.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      // On success, update the UI instantly
+      setPets(currentPets => currentPets.filter(p => p.id !== petToDelete.id));
+      Alert.alert('Success', `${petToDelete.first_name} has been deleted.`);
+    } catch (error) {
+      console.error("Delete failed:", error);
+      Alert.alert('Error', 'Failed to delete pet.');
+    } finally {
+      // Close the modal and clear the state
+      setDeleteModalVisible(false);
+      setPetToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setPetToDelete(null);
+  };
 
   const getProfileImageUrl = () => {
     if (!user) {
@@ -49,6 +136,56 @@ const HomeScreen = () => {
   };
 
   const profileImageUrl = getProfileImageUrl();
+
+  const handleViewPet = (petId: number) => {
+    router.push({
+      pathname: '/Screens/ViewPet',
+      params: { petId: petId.toString() } // Pass the pet's ID
+    });
+  };
+
+  const renderPetContent = () => {
+    if (isLoadingPets) {
+      return (
+        <View style={styles.emptyStateContainer}>
+          <ActivityIndicator size="large" color={Colors.primaryOrange} />
+        </View>
+      );
+    }
+    if (petsError) {
+      return (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>{petsError}</Text>
+        </View>
+      );
+    }
+    if (pets.length > 0) {
+      return (
+        <FlatList
+          data={pets}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <PetInfoCard 
+              pet={item} 
+              onEdit={() => handleEdit(item)} 
+              onDelete={() => handleDelete(item)} 
+              onView={() => handleViewPet(item.id)}
+            />
+          )}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      );
+    }
+    // If loading is done and there are no pets, show the empty state
+     return (
+      <View style={styles.contentArea}>
+        <MaterialCommunityIcons name="paw-off" size={80} color={Colors.primaryOrange} />
+        <Text style={styles.emptyStateText}>
+          No pets found. Tap + to add one now.
+        </Text>
+      </View>
+    );
+  };
   
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -80,26 +217,29 @@ const HomeScreen = () => {
             placeholderTextColor={Colors.textSecondary}
             style={styles.searchInput}
           />
-        </View>
+          <TouchableOpacity>
+              <Feather name="sliders" size={20} color={Colors.primaryOrange} />
+            </TouchableOpacity>
+          </View>
 
         {/* My Pets Header Section */}
         <View style={styles.myPetsHeader}>
-          <Text style={styles.myPetsTitle}>My Pets</Text>
+          <View style={styles.myPetsTitleContainer}>
+            <Text style={styles.myPetsTitle}>My Pets</Text>
+            <Ionicons name="paw" size={16} color={Colors.primaryOrange} style={styles.pawIcon} />
+          </View>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => console.log('Add Pet Tapped')}
+            onPress={() => router.push('/Screens/AddPet')}
           >
             <Ionicons name="add" size={24} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
-        {/* Empty State - No Pets Found */}
-        <View style={styles.emptyStateContainer}>
-          <MaterialCommunityIcons name="paw" size={80} color={Colors.primaryOrange} />
-          <Text style={styles.emptyStateText}>
-            No pets found. Tap + to add one now.
-          </Text>
-        </View>
+        {/* Pet Content Section */}
+        {renderPetContent()}
+
+        
       </View>
 
       {/* Bottom Navigation Bar */}
@@ -128,6 +268,18 @@ const HomeScreen = () => {
           <Ionicons name="scan-outline" size={30} color={Colors.primaryOrange} />
         </TouchableOpacity>
       </View>
+
+       {petToDelete && (
+        <ConfirmationModal
+          visible={isDeleteModalVisible}
+          title={`Are you sure you want to delete ${petToDelete.first_name} from your pets?`}
+          message="This action cannot be undone. All scan records for this pet will also be deleted."
+          imageSource={require('../../assets/images/sad-cat.png')} // Make sure this image exists in assets/images
+          confirmButtonText="Delete"
+          onCancel={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </View>
   );
 };
@@ -169,11 +321,19 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.lightOrange,
+        backgroundColor: Colors.white,
         borderRadius: 25,
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        marginBottom: 30,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 25,
+         borderWidth: 1,
+        borderColor: Colors.lightOrange,
+        // Add Shadow
+        shadowColor: Colors.primaryOrange,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 4,
     },
     searchInput: {
         flex: 1,
@@ -187,11 +347,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
+    myPetsTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
     myPetsTitle: {
         fontSize: 22,
         fontWeight: 'bold',
         color: Colors.textPrimary,
     },
+     pawIcon: {
+    marginLeft: 8,
+    transform: [{ rotate: '15deg' }],
+  },
     addButton: {
         backgroundColor: Colors.primaryOrange,
         width: 36,
@@ -245,6 +413,15 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.white,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    listContainer: {
+    flex: 1, // This is crucial. It tells the list area to expand and fill the remaining space.
+    },
+    contentArea: { // Used for loading and empty states to ensure they are centered
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingBottom: 60,
     },
 });
 
