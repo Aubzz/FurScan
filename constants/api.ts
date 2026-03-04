@@ -13,6 +13,10 @@ export const API_URL = Platform.select({
 
   // This is for the mobile app (Expo Go). 
   // THIS IS THE ONLY LINE YOU'LL EVER NEED TO CHANGE.
+<<<<<<< HEAD
   default: 'http://192.168.100.4:8080', // IMPORTANT: Replace with your computer's IP
   //default: 'https://furemedy-backend.onrender.com',
+=======
+  default: 'http://192.168.1.52:8080', // IMPORTANT: Replace with your computer's IP
+>>>>>>> origin/insights
 });

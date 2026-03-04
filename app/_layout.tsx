@@ -18,6 +18,7 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false, 
         }}
+
       >
         {/* 
           3. Define your main app screens/layouts here.
@@ -27,6 +28,7 @@ export default function RootLayout() {
         {/* This refers to the layout defined in 'app/(tabs)/_layout.tsx' */}
         <Stack.Screen name="(tabs)" />
 
+
         {/* These refer to your individual authentication screens */}
         <Stack.Screen name="Screens/Login" />
         <Stack.Screen name="Screens/StartScreen" />
@@ -35,6 +37,7 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/SetNewPassword" />
         <Stack.Screen name="Screens/ForgotPassword" />
         <Stack.Screen name="Screens/Settings" />
+<<<<<<< HEAD
         <Stack.Screen name="Screens/Signup" />
         <Stack.Screen name="Screens/PetInfoScreen" />
         <Stack.Screen name="Screens/ScanScreen" />
@@ -42,6 +45,11 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/ResultsScreen" />
         <Stack.Screen name="Screens/TellMeMoreScreen" />
         
+=======
+        <Stack.Screen name="Screens/AddPet" />
+        <Stack.Screen name="Screens/ViewPet" />
+        <Stack.Screen name="Screens/ArticleDetail" />
+>>>>>>> origin/insights
       </Stack>
     </AuthProvider>
   );
