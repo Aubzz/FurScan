@@ -26,6 +26,14 @@ const Colors = {
   error: '#FF0000',
 };
 
+<<<<<<< HEAD
+=======
+const API_URL = Platform.select({
+  web: 'http://localhost:8080',
+  default: 'http://192.168.1.49:8080', // Replace with your IP
+});
+
+>>>>>>> origin/Scan
 const ForgotPasswordScreen = () => {
   const router = useRouter();
   

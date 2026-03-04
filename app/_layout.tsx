@@ -39,9 +39,19 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/SetNewPassword" />
         <Stack.Screen name="Screens/ForgotPassword" />
         <Stack.Screen name="Screens/Settings" />
+<<<<<<< HEAD
         <Stack.Screen name="Screens/AddPet" />
         <Stack.Screen name="Screens/ViewPet" />
         <Stack.Screen name="Screens/ArticleDetail" />
+=======
+        <Stack.Screen name="Screens/Signup" />
+        <Stack.Screen name="Screens/PetInfoScreen" />
+        <Stack.Screen name="Screens/ScanScreen" />
+        <Stack.Screen name="Screens/UploadImageScreen" />
+        <Stack.Screen name="Screens/ResultsScreen" />
+        <Stack.Screen name="Screens/TellMeMoreScreen" />
+        
+>>>>>>> origin/Scan
       </Stack>
     </AuthProvider>
   );

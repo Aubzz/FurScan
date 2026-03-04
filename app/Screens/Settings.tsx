@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
 
-// --- Theme Constants ---
+// --- Constants ---
 const Colors = {
   primary: '#F79C4E',       // DermaPaw Orange
   primaryDark: '#E88631',   // Deeper Orange for gradient
@@ -29,7 +29,11 @@ const Colors = {
   border: '#F0F0F0',
 };
 
-// --- Types ---
+
+
+// --- TYPE DEFINITIONS (THIS IS THE FIX) ---
+
+// 1. Define the shape of a single item in our settings list
 type SettingsItem = {
   subtitle: string;
   onPress: () => void;
@@ -157,15 +161,15 @@ const SettingsScreen = () => {
             <SettingsCard
               sectionTitle="PRIVACY & DATA"
               items={[
-                { subtitle: 'Privacy Policy', onPress: () => router.push('/Screens/settings/PrivacyPolicy') },
+                { subtitle: 'Privacy Policy', onPress: () => router.push('/Screens/settings/PrivacyPolicy' as any) },
               ]}
             />
 
             <SettingsCard
               sectionTitle="SUPPORT"
               items={[
-                { subtitle: 'About', onPress: () => router.push('/Screens/settings/AboutUs') },
-                { subtitle: 'FAQ & Help', onPress: () => router.push('/Screens/settings/FAQ') },
+                { subtitle: 'About', onPress: () => router.push('/Screens/settings/AboutUs' as any) },
+                { subtitle: 'FAQ & Help', onPress: () => router.push('/Screens/settings/FAQ' as any) },
               ]}
             />
 
