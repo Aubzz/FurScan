@@ -17,10 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../../constants/api';
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/Scan
 
 const Colors = {
   background: '#FFFFFF',
@@ -32,10 +28,6 @@ const Colors = {
   error: '#FF0000',
 };
 
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/Scan
 const SetNewPasswordScreen = () => {
   const router = useRouter();
   const { email, resetToken } = useLocalSearchParams<{ email: string; resetToken: string }>();
