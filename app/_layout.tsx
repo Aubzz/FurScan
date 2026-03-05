@@ -1,9 +1,7 @@
-// In app/_layout.tsx
-
-
-import { Stack } from 'expo-router';
-import React from 'react';
-import { AuthProvider } from '../contexts/AuthContext'; // 1. Import your new AuthProvider
+import { Stack } from "expo-router";
+import React from "react";
+import { AssessmentProvider } from "../contexts/AssessmentContext"; // 1. Import AssessmentProvider
+import { AuthProvider } from "../contexts/AuthContext";
 
 /**
  * This is the root layout for the entire app.
@@ -11,35 +9,35 @@ import { AuthProvider } from '../contexts/AuthContext'; // 1. Import your new Au
  */
 export default function RootLayout() {
   return (
-    // 2. Wrap the entire Stack navigator with the AuthProvider.
-    // Now, every screen defined within this Stack can access the auth context.
+    // 2. Wrap everything with AuthProvider
     <AuthProvider>
-      <Stack
-        // A common practice is to hide the default header at the root level,
-        // as individual screens or nested layouts (like your tabs) will manage their own headers.
-        screenOptions={{
-          headerShown: false, 
-        }}
-      >
-        {/* 
-          3. Define your main app screens/layouts here.
-          The 'name' prop must match the file or directory name in the 'app' folder.
-        */}
+      {/* 3. Wrap everything with AssessmentProvider so screens can use useAssessment() */}
+      <AssessmentProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
 
-        {/* This refers to the layout defined in 'app/(tabs)/_layout.tsx' */}
-        <Stack.Screen name="(tabs)" />
+          {/* Auth Screens */}
+          <Stack.Screen name="Screens/Login" />
+          <Stack.Screen name="Screens/StartScreen" />
+          <Stack.Screen name="Screens/CreateAccount" />
+          <Stack.Screen name="Screens/VerifyOtp" />
+          <Stack.Screen name="Screens/SetNewPassword" />
+          <Stack.Screen name="Screens/ForgotPassword" />
 
-        {/* These refer to your individual authentication screens */}
-        <Stack.Screen name="Screens/Login" />
-        <Stack.Screen name="Screens/StartScreen" />
-        <Stack.Screen name="Screens/CreateAccount" />
-        <Stack.Screen name="Screens/VerifyOtp" />
-        <Stack.Screen name="Screens/SetNewPassword" />
-        <Stack.Screen name="Screens/ForgotPassword" />
-        <Stack.Screen name="Screens/Settings" />
-        <Stack.Screen name="Screens/AddPet" />
-        <Stack.Screen name="Screens/ViewPet" />
-      </Stack>
+          {/* App Screens */}
+          <Stack.Screen name="Screens/Settings" />
+          <Stack.Screen name="Screens/PetInfoScreen" />
+          <Stack.Screen name="Screens/PhotoTipsScreen" />
+          <Stack.Screen name="Screens/ScanScreen" />
+          <Stack.Screen name="Screens/ResultScreen" />
+          <Stack.Screen name="Screens/TellMeMoreScreen" />
+          <Stack.Screen name="Screens/DiagnosisReportScreen" />
+        </Stack>
+      </AssessmentProvider>
     </AuthProvider>
   );
 }

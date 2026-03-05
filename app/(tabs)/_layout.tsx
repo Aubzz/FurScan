@@ -1,9 +1,9 @@
 // In: app/(tabs)/_layout.tsx
 
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs } from "expo-router";
+import React from "react";
 // Import the custom tab bar component we just created
-import { CustomTabBar } from '../../components/CustomTabBar';
+import { CustomTabBar } from "../../components/CustomTabBar";
 
 export default function TabsLayout() {
   return (
@@ -16,7 +16,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="home" options={{ headerShown: false }} />
       <Tabs.Screen name="chatbot" options={{ headerShown: false }} />
       {/* The scan button doesn't have a screen, it's just a button */}
-      <Tabs.Screen name="search" options={{ headerShown: false }} />
+      <Tabs.Screen name="insights" options={{ headerShown: false }} />
       <Tabs.Screen name="profile" options={{ headerShown: false }} />
     </Tabs>
   );

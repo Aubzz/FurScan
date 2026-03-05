@@ -71,12 +71,6 @@ const HomeScreen = () => {
         {/* My Pets Header Section */}
         <View style={styles.myPetsHeader}>
           <Text style={styles.myPetsTitle}>My Pets</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => console.log('Add Pet Tapped')}
-          >
-            <Ionicons name="add" size={24} color={Colors.white} />
-          </TouchableOpacity>
         </View>
 
         {/* Empty State - No Pets Found */}

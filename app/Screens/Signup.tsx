@@ -385,9 +385,8 @@ const SignupScreen = () => {
       return (
         <>
           <TouchableOpacity
-            style={[styles.nextButton, !isStep2Valid && styles.buttonDisabled]}
-            onPress={handleFinalSignUp}
-            disabled={!isStep2Valid}>
+            style={styles.nextButton}
+            onPress={handleFinalSignUp}>
             <Text style={styles.nextButtonText}>Sign Up</Text>
           </TouchableOpacity>
           <TouchableOpacity

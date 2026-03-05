@@ -1,428 +1,749 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import axios from 'axios';
-import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  FlatList,
+  Animated,
   Image,
+  Platform,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ConfirmationModal from '../../components/ConfirmationModal';
-import PetInfoCard from '../../components/PetInfoCard';
-import { API_URL } from '../../constants/api';
-import { useAuth } from '../../contexts/AuthContext';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { API_URL } from "../../constants/api";
+import { useAuth } from "../../contexts/AuthContext";
+import { Assessment } from "../../types/Assessment";
+
+import {
+  deleteAssessmentFromHistory,
+  getHistoryFromStorage,
+} from "../../utils/historyStorage";
 
 const Colors = {
-  background: '#FFFFFF',
-  primaryOrange: '#F7924A',
-  lightOrange: '#FDEFE5',
-  textPrimary: '#333333',
-  textSecondary: '#888888',
-  white: '#FFFFFF',
-  borderColor: '#E0E0E0',
-};
-
-type Pet = {
-  id: number;
-  first_name: string;
-  species: string;
-  breed: string | null;
-  pet_image_path: string | null;
+  background: "#F8F9FA",
+  primaryOrange: "#F79C4E",
+  darkOrange: "#E86F2C",
+  lightOrange: "#FFF3E8",
+  cardBg: "#FFFFFF",
+  textPrimary: "#2D3436",
+  textSecondary: "#888888",
+  white: "#FFFFFF",
+  borderColor: "#E0E0E0",
+  shadow: "#000000",
+  success: "#27AE60",
+  danger: "#C0392B",
 };
 
 const HomeScreen = () => {
   const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [isLoadingPets, setIsLoadingPets] = useState(true);
-  const [petsError, setPetsError] = useState<string | null>(null);
-  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [petToDelete, setPetToDelete] = useState<Pet | null>(null);
+  const [displayImage, setDisplayImage] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("Pet Parent");
+  const [history, setHistory] = useState<Assessment[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      const fetchPets = async () => {
-        if (!token) {
-          setPets([]);
-          setIsLoadingPets(false);
-          return;
-        }
+      let isActive = true;
 
-        setIsLoadingPets(true);
-        setPetsError(null);
+      const fetchProfile = async () => {
+        if (!token) return;
+
         try {
-          const response = await fetch(`${API_URL}/api/pets/mine`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+          const response = await fetch(`${API_URL}/api/profile/me`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
 
-          if (!response.ok) {
-            throw new Error('Failed to fetch pets.');
+          if (response.ok && isActive) {
+            const data = await response.json();
+            if (data.first_name) setUserName(data.first_name);
+
+            const path =
+              data.profile_image ||
+              data.profileImagePath ||
+              data.profile_image_path;
+
+            if (path) {
+              if (path.startsWith("http")) {
+                setDisplayImage(path);
+              } else {
+                const cleanPath = path.startsWith("/")
+                  ? path.substring(1)
+                  : path;
+                setDisplayImage(
+                  `${API_URL}/${cleanPath.replace(/\\/g, "/")}?t=${Date.now()}`,
+                );
+              }
+            }
           }
-
-          const data: Pet[] = await response.json();
-          
-          setPets(data);
-
-        } catch (error: any) {
-          setPetsError(error.message);
-        } finally {
-          setIsLoadingPets(false);
+        } catch (error) {
+          console.log("Error fetching profile:", error);
         }
       };
 
-      fetchPets();
-    }, [token]) // Dependency array ensures it refetches if the user logs in/out
+      const loadHistory = async () => {
+        try {
+          const stored = await getHistoryFromStorage();
+          if (isActive) {
+            const sorted = stored.sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
+            );
+            setHistory(sorted.slice(0, 5));
+          }
+        } catch (error) {
+          console.log("Error loading history:", error);
+        }
+      };
+
+      fetchProfile();
+      loadHistory();
+
+      return () => {
+        isActive = false;
+      };
+    }, [token]),
   );
 
-  const handleEdit = (petToEdit: Pet) => {
-    router.push({
-      pathname: '/Screens/AddPet',
-      params: { petToEdit: JSON.stringify(petToEdit) }
-    });
+  const getContextImage = () => {
+    if (displayImage) return displayImage;
+    if (!user) return null;
+    const userData = user as any;
+    if (userData.first_name && userName === "Pet Parent")
+      setUserName(userData.first_name);
+    const path =
+      userData.profile_image ||
+      userData.profileImagePath ||
+      userData.profile_image_path;
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+    return `${API_URL}/${cleanPath.replace(/\\/g, "/")}`;
   };
 
-  const handleDelete = (pet: Pet) => {
-    setPetToDelete(pet);
-    setDeleteModalVisible(true);
+  const profileImageUrl = getContextImage();
+
+  const getGreeting = () => {
+    const hours = new Date().getHours();
+    if (hours < 12) return "Good Morning,";
+    if (hours < 18) return "Good Afternoon,";
+    return "Good Evening,";
   };
 
-  const handleConfirmDelete = async () => {
-    if (!petToDelete) return;
-
-     try {
-      await axios.delete(`${API_URL}/api/pets/${petToDelete.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "2-digit",
       });
-      // On success, update the UI instantly
-      setPets(currentPets => currentPets.filter(p => p.id !== petToDelete.id));
-      Alert.alert('Success', `${petToDelete.first_name} has been deleted.`);
-    } catch (error) {
-      console.error("Delete failed:", error);
-      Alert.alert('Error', 'Failed to delete pet.');
-    } finally {
-      // Close the modal and clear the state
-      setDeleteModalVisible(false);
-      setPetToDelete(null);
+    } catch {
+      return "";
     }
   };
 
-  const handleCancelDelete = () => {
-    setDeleteModalVisible(false);
-    setPetToDelete(null);
-  };
+  const handleHistoryItemPress = (item: Assessment) => {
+    const isHealthy =
+      !item.possibleCauses ||
+      item.possibleCauses.length === 0 ||
+      item.possibleCauses.includes("Healthy") ||
+      item.possibleCauses[0] === "Inconclusive / Healthy Appearance";
 
-  const getProfileImageUrl = () => {
-    if (!user) {
-      return null;
-    }
-    const path = user.profile_image_path || user.profileImagePath;
-    if (!path) {
-      return null;
-    }
-    if (path.startsWith('http')) {
-      return path;
-    }
-    return `${API_URL}/${path.replace(/\\/g, '/')}`;
-  };
+    const condition = isHealthy
+      ? "Inconclusive / Healthy Appearance"
+      : item.possibleCauses?.[0] || "Issue Detected";
 
-  const profileImageUrl = getProfileImageUrl();
+    const imageUri = (item as any).scanImage || "";
+    // Handle legacy symptoms struct vs new string string[]
+    const symptomsData =
+      (item as any).symptoms || (item as any).userSymptoms || [];
 
-  const handleViewPet = (petId: number) => {
     router.push({
-      pathname: '/Screens/ViewPet',
-      params: { petId: petId.toString() } // Pass the pet's ID
+      pathname: "/Screens/DiagnosisReportScreen" as any,
+      params: {
+        condition,
+        confidence: item.confidence?.toString() ?? "N/A", // History doesn't reliably store this per session
+        summary: JSON.stringify(symptomsData),
+        imageUri: imageUri,
+        petName: item.petInfo.name,
+        petAge: String(item.petInfo.age),
+        petBreed: item.petInfo.breed,
+        allResults: JSON.stringify(
+          item.aiResults || item.detectedLesions || [],
+        ),
+        isHistory: "true",
+        // NEW: Pass the saved diagnosis details so the history screen rebuilds exactly
+        diagnosisDetails: item.diagnosisDetails
+          ? JSON.stringify(item.diagnosisDetails)
+          : undefined,
+      },
     });
   };
 
-  const renderPetContent = () => {
-    if (isLoadingPets) {
-      return (
-        <View style={styles.emptyStateContainer}>
-          <ActivityIndicator size="large" color={Colors.primaryOrange} />
-        </View>
-      );
-    }
-    if (petsError) {
-      return (
-        <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateText}>{petsError}</Text>
-        </View>
-      );
-    }
-    if (pets.length > 0) {
-      return (
-        <FlatList
-          data={pets}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <PetInfoCard 
-              pet={item} 
-              onEdit={() => handleEdit(item)} 
-              onDelete={() => handleDelete(item)} 
-              onView={() => handleViewPet(item.id)}
+  const renderActionCard = () => {
+    return (
+      <View style={styles.actionCardContainer}>
+        <LinearGradient
+          colors={[Colors.white, Colors.lightOrange]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.actionCard}
+        >
+          <MaterialCommunityIcons
+            name="paw"
+            size={180}
+            color="rgba(247, 146, 74, 0.08)"
+            style={styles.bgIcon}
+          />
+
+          <View style={styles.iconCircle}>
+            <MaterialCommunityIcons
+              name="camera-plus-outline"
+              size={40}
+              color={Colors.primaryOrange}
             />
-          )}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
-      );
-    }
-    // If loading is done and there are no pets, show the empty state
-     return (
-      <View style={styles.contentArea}>
-        <MaterialCommunityIcons name="paw-off" size={80} color={Colors.primaryOrange} />
-        <Text style={styles.emptyStateText}>
-          No pets found. Tap + to add one now.
-        </Text>
+          </View>
+
+          <Text style={styles.actionTitle}>Check Your Pet&apos;s Skin</Text>
+          <Text style={styles.actionSubtitle}>
+            Take a photo of the affected area to get an instant AI analysis and
+            care tips.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={() => router.push("/Screens/PetInfoScreen")}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.startButtonText}>START NEW SCAN</Text>
+            <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     );
   };
-  
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      <View style={styles.content}>
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.logoText}>Furemedy</Text>
-          <TouchableOpacity onPress={() => router.push('/profile')}>
-            {profileImageUrl ? (
-              <Image
-                source={{ uri: profileImageUrl }}
-                style={styles.profileImage}
+  const handleDeleteHistoryItem = async (id: string) => {
+    Alert.alert("Delete Scan", "Are you sure you want to delete this scan?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const success = await deleteAssessmentFromHistory(id);
+          if (success) {
+            const stored = await getHistoryFromStorage();
+            const sorted = stored.sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
+            );
+            setHistory(sorted.slice(0, 5));
+          } else {
+            Alert.alert("Error", "Could not delete history item.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const renderHistoryItem = (item: Assessment, index: number) => {
+    const isHealthy =
+      !item.possibleCauses ||
+      item.possibleCauses.length === 0 ||
+      item.possibleCauses.includes("Healthy") ||
+      item.possibleCauses[0] === "Inconclusive / Healthy Appearance";
+
+    const conditionTitle = isHealthy
+      ? "Healthy"
+      : item.possibleCauses?.[0] || "Issue Detected";
+
+    return (
+      <Animated.View
+        key={item.id || index}
+        style={[
+          styles.historyCardWrapper,
+          {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
+            elevation: 3,
+            marginBottom: 18,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.historyCardMain}
+          onPress={() => handleHistoryItemPress(item)}
+          activeOpacity={0.8}
+        >
+          {/* Scan preview image */}
+          {item.scanImage ? (
+            <Image
+              source={{ uri: item.scanImage }}
+              style={styles.historyThumbnail}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.historyThumbnailPlaceholder}>
+              <MaterialCommunityIcons
+                name="image-off-outline"
+                size={28}
+                color="#ccc"
               />
-            ) : (
-              <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
-                <Feather name="user" size={24} color={Colors.textSecondary} />
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar Section */}
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color={Colors.textSecondary} />
-          <TextInput
-            placeholder="Search here"
-            placeholderTextColor={Colors.textSecondary}
-            style={styles.searchInput}
+            </View>
+          )}
+          <View style={styles.historyIconContainer}>
+            <MaterialCommunityIcons
+              name={isHealthy ? "check-circle-outline" : "alert-circle-outline"}
+              size={24}
+              color={isHealthy ? Colors.success : Colors.danger}
+            />
+          </View>
+          <View style={styles.historyContent}>
+            <Text style={styles.historyPetName}>{item.petInfo.name}</Text>
+            <Text
+              style={[
+                styles.historyCondition,
+                { color: isHealthy ? Colors.success : Colors.danger },
+              ]}
+              numberOfLines={1}
+            >
+              {conditionTitle}
+            </Text>
+            <Text style={styles.historyDate}>{formatDate(item.createdAt)}</Text>
+          </View>
+        </TouchableOpacity>
+        <View style={styles.verticalDivider} />
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => handleDeleteHistoryItem(item.id)}
+        >
+          <MaterialCommunityIcons
+            name="trash-can-outline"
+            size={22}
+            color={Colors.textSecondary}
           />
-          <TouchableOpacity>
-              <Feather name="sliders" size={20} color={Colors.primaryOrange} />
-            </TouchableOpacity>
-          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
-        {/* My Pets Header Section */}
-        <View style={styles.myPetsHeader}>
-          <View style={styles.myPetsTitleContainer}>
-            <Text style={styles.myPetsTitle}>My Pets</Text>
-            <Ionicons name="paw" size={16} color={Colors.primaryOrange} style={styles.pawIcon} />
-          </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push('/Screens/AddPet')}
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.darkOrange} />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={styles.headerContainer}>
+          <LinearGradient
+            colors={[Colors.darkOrange, Colors.primaryOrange]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.gradientHeader, { paddingTop: insets.top + 10 }]}
           >
-            <Ionicons name="add" size={24} color={Colors.white} />
-          </TouchableOpacity>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.greetingText}>{getGreeting()}</Text>
+                <Text style={styles.userNameText}>{userName} 👋</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile")}
+                activeOpacity={0.8}
+                style={styles.profileContainer}
+              >
+                {profileImageUrl ? (
+                  <Image
+                    source={{ uri: profileImageUrl }}
+                    style={styles.profileImage}
+                    onError={(e) =>
+                      console.log("Image Load Error:", e.nativeEvent.error)
+                    }
+                  />
+                ) : (
+                  <View
+                    style={[styles.profileImage, styles.profilePlaceholder]}
+                  >
+                    <Feather
+                      name="user"
+                      size={20}
+                      color={Colors.primaryOrange}
+                    />
+                  </View>
+                )}
+                <View style={styles.notificationDot} />
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
         </View>
+        <View style={styles.contentBody}>
+          {/* Only show Quick Actions title and card if there is NO recent scan */}
+          {history.length === 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              {renderActionCard()}
+              <View style={styles.noHistoryMsgBox}>
+                <MaterialCommunityIcons
+                  name="history"
+                  size={32}
+                  color={Colors.primaryOrange}
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={styles.noHistoryText}>
+                  No recent scans yet. Start your first scan!
+                </Text>
+              </View>
+            </>
+          )}
 
-        {/* Pet Content Section */}
-        {renderPetContent()}
+          {history.length > 0 && (
+            <View style={{ marginTop: 25 }}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Recent Scans</Text>
+              </View>
+              {history.map(renderHistoryItem)}
+            </View>
+          )}
 
-        
-      </View>
-
-      {/* Bottom Navigation Bar */}
-      <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
-        <TouchableOpacity style={styles.navButton}>
-          <MaterialCommunityIcons name="paw" size={26} color={Colors.primaryOrange} />
-          <Text style={[styles.navText, styles.navTextActive]}>My Pets</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="chatbubble-ellipses-outline" size={26} color={Colors.textSecondary} />
-          <Text style={styles.navText}>Chatbot</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.navButton} />
-
-        <TouchableOpacity style={styles.navButton}>
-          <Feather name="search" size={26} color={Colors.textSecondary} />
-          <Text style={styles.navText}>Search</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => router.push('/profile')}>
-          <Feather name="user" size={26} color={Colors.textSecondary} />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={[styles.scanButton, { bottom: 25 + insets.bottom }]}>
-          <Ionicons name="scan-outline" size={30} color={Colors.primaryOrange} />
-        </TouchableOpacity>
-      </View>
-
-       {petToDelete && (
-        <ConfirmationModal
-          visible={isDeleteModalVisible}
-          title={`Are you sure you want to delete ${petToDelete.first_name} from your pets?`}
-          message="This action cannot be undone. All scan records for this pet will also be deleted."
-          imageSource={require('../../assets/images/sad-cat.png')} // Make sure this image exists in assets/images
-          confirmButtonText="Delete"
-          onCancel={handleCancelDelete}
-          onConfirm={handleConfirmDelete}
-        />
-      )}
+          <View style={styles.tipCard}>
+            <View style={styles.tipTextObj}>
+              <Text style={styles.tipTitle}>Did you know?</Text>
+              <Text style={styles.tipBody}>
+                Regular brushing helps remove dirt and spreads natural oils on
+                your pet&apos;s coat.
+              </Text>
+            </View>
+            <MaterialCommunityIcons
+              name="lightbulb-on-outline"
+              size={40}
+              color={Colors.primaryOrange}
+            />
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        // --- THIS IS THE MODIFICATION ---
-        paddingTop: 10, // Add this line to create space above the header
-        paddingBottom: 20,
-    },
-    logoText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: Colors.primaryOrange,
-    },
-    profileImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.lightOrange,
-    },
-    profileImagePlaceholder: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: Colors.borderColor,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.white,
-        borderRadius: 25,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 25,
-         borderWidth: 1,
-        borderColor: Colors.lightOrange,
-        // Add Shadow
-        shadowColor: Colors.primaryOrange,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  headerContainer: {
+    marginBottom: 20,
+  },
+  gradientHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  greetingText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  userNameText: {
+    color: Colors.white,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginTop: 2,
+  },
+  profileContainer: {
+    position: "relative",
+  },
+  profileImage: {
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.5)",
+  },
+  profilePlaceholder: {
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notificationDot: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#FF5252",
+    borderWidth: 2,
+    borderColor: Colors.darkOrange,
+  },
+  searchWrapper: {
+    marginTop: -28,
+    paddingHorizontal: 20,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 56,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.shadow,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    height: "100%",
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: Colors.borderColor,
+    marginHorizontal: 10,
+  },
+  contentBody: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: Colors.textPrimary,
+    marginBottom: 15,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  actionCardContainer: {
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.shadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  actionCard: {
+    borderRadius: 24,
+    padding: 24,
+    alignItems: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  bgIcon: {
+    position: "absolute",
+    right: -40,
+    bottom: -40,
+    transform: [{ rotate: "-15deg" }],
+  },
+  iconCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: Colors.lightOrange,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(247, 146, 74, 0.2)",
+  },
+  actionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  actionSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+    paddingHorizontal: 10,
+  },
+  startButton: {
+    backgroundColor: Colors.primaryOrange,
+    borderRadius: 30,
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.primaryOrange,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
         elevation: 4,
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 10,
-        fontSize: 16,
-        color: Colors.textPrimary,
-    },
-    myPetsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    myPetsTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+      },
+    }),
   },
-    myPetsTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
-    },
-     pawIcon: {
-    marginLeft: 8,
-    transform: [{ rotate: '15deg' }],
+  startButtonText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    marginRight: 8,
   },
-    addButton: {
-        backgroundColor: Colors.primaryOrange,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emptyStateContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingBottom: 60,
-    },
-    emptyStateText: {
-        marginTop: 15,
-        fontSize: 16,
-        color: Colors.textSecondary,
-        textAlign: 'center',
-    },
-    navBar: {
-        flexDirection: 'row',
-        height: 70,
-        borderTopWidth: 1,
-        borderTopColor: '#E0E0E0',
-        backgroundColor: Colors.white,
-    },
-    navButton: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    navText: {
-        fontSize: 10,
-        color: Colors.textSecondary,
-        marginTop: 4,
-    },
-    navTextActive: {
-        color: Colors.primaryOrange,
-        fontWeight: 'bold',
-    },
-    scanButton: {
-        position: 'absolute',
-        left: '50%',
-        marginLeft: -30,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        borderColor: Colors.lightOrange,
-        borderWidth: 6,
-        backgroundColor: Colors.white,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    listContainer: {
-    flex: 1, // This is crucial. It tells the list area to expand and fill the remaining space.
-    },
-    contentArea: { // Used for loading and empty states to ensure they are centered
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingBottom: 60,
-    },
+  tipCard: {
+    flexDirection: "row",
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.03)",
+  },
+  tipTextObj: {
+    flex: 1,
+    marginRight: 10,
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: Colors.primaryOrange,
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  tipBody: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  historyCardWrapper: {
+    flexDirection: "row",
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderColor,
+    overflow: "hidden",
+    height: 80,
+    alignItems: "center",
+  },
+  historyCardMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 16,
+    height: "100%",
+  },
+  historyIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  historyContent: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  historyPetName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: Colors.textPrimary,
+  },
+  historyCondition: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  historyDate: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  historyThumbnail: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#eee",
+    backgroundColor: "#fafafa",
+  },
+  historyThumbnailPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    marginRight: 10,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  noHistoryMsgBox: {
+    alignItems: "center",
+    marginTop: 30,
+    marginBottom: 10,
+    padding: 16,
+    backgroundColor: "#FFF8F2",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FFE0C2",
+  },
+  noHistoryText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 4,
+    fontWeight: "500",
+  },
+  verticalDivider: {
+    width: 1,
+    height: "60%",
+    backgroundColor: Colors.borderColor,
+  },
+  deleteAction: {
+    width: 50,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9F9F9",
+  },
 });
 
 export default HomeScreen;
