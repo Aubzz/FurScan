@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const GEMINI_API_KEY = "AIzaSyBKPN7SvRidIUH1-n-1injvWMwC5Jc1K1c";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent";
+const GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent";
 
 const systemPrompt = `You are Remy, a friendly and reliable chatbot that helps dog owners understand possible dog skin diseases. Remy simplifies dog dermatology, gives clear and practical guidance, and always reminds users that only a veterinarian can give a final diagnosis.
 
@@ -106,11 +107,11 @@ GREETING:
 If user says "Hi":
 "Hi! How can I help with your dog's skin today?"`;
 
-let conversationHistory: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+let conversationHistory: {[][]
+  role: string;
+  parts: Array<{ text: string }>;
+}> = [];
 
-/**
- * Send message to Gemini API
- */
 export const sendMessage = async (userMessage: string): Promise<string> => {
   try {
     console.log("📤 Sending to Gemini:", userMessage);
@@ -138,7 +139,7 @@ export const sendMessage = async (userMessage: string): Promise<string> => {
           "Content-Type": "application/json",
         },
         timeout: 45000,
-      }
+      },
     );
 
     console.log("✅ Gemini API response:", response.status);
@@ -158,10 +159,10 @@ export const sendMessage = async (userMessage: string): Promise<string> => {
       }
 
       return botReply;
-    } else {
-      console.warn("⚠️ No response from Gemini");
-      return "I didn't understand that. Could you rephrase your question about your dog's skin?";
     }
+
+    console.warn("⚠️ No response from Gemini");
+    return "I didn't understand that. Could you rephrase your question about your dog's skin?";
   } catch (error: any) {
     console.error("❌ Gemini API error:", error.message);
     if (error.response?.data) {
@@ -176,9 +177,6 @@ export const sendMessage = async (userMessage: string): Promise<string> => {
   }
 };
 
-/**
- * Reset conversation
- */
 export const resetConversation = () => {
   conversationHistory = [];
   console.log("🔄 Conversation reset");

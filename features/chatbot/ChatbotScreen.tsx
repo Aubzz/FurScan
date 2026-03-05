@@ -1,5 +1,5 @@
-import React from "react";
-import { SafeAreaView, StyleSheet, Text } from "react-native";
+import React from 'react';
+import { SafeAreaView, StyleSheet, Text } from 'react-native';
 
 const ChatbotScreen = () => {
   return (
@@ -13,19 +13,19 @@ const ChatbotScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F9F9F9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9',
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#888888",
+    color: '#888888',
   },
 });
 
-export default ChatbotScreen;
+export default ChatbotScreen; 

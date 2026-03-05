@@ -1,4 +1,3 @@
-// services/chatStorage.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CHAT_KEY = "chat_history";

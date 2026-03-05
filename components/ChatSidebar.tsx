@@ -1,6 +1,6 @@
 /**
  * ChatSidebar.tsx
- * 
+ *
  * Left sidebar component for chat history (ChatGPT-style)
  * Handles:
  * - Displaying list of chat sessions
@@ -11,7 +11,7 @@
  * - Session filtering (archived/active)
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
     ActivityIndicator,
     Dimensions,
@@ -19,9 +19,9 @@ import {
     ScrollView,
     Text,
     TouchableOpacity,
-    View
-} from 'react-native';
-import { ChatSession } from '../app/services/chatApi';
+    View,
+} from "react-native";
+import { ChatSession } from "../services/chatApi";
 
 interface ChatSidebarProps {
   sessions: ChatSession[];
@@ -48,13 +48,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isLoading = false,
   isModal = true,
 }) => {
-  const [selectedForDelete, setSelectedForDelete] = useState<number | null>(null);
-  const screenWidth = Dimensions.get('window').width;
+  const [selectedForDelete, setSelectedForDelete] = useState<number | null>(
+    null,
+  );
+  const screenWidth = Dimensions.get("window").width;
   const isMobile = screenWidth < 768;
 
   // Separate active and archived sessions
-  const activeSessions = sessions.filter(s => !s.is_archived);
-  const archivedSessions = sessions.filter(s => s.is_archived);
+  const activeSessions = sessions.filter((s) => !s.is_archived);
+  const archivedSessions = sessions.filter((s) => s.is_archived);
 
   const handleDeleteChat = (sessionId: number) => {
     onDeleteChat(sessionId);
@@ -63,13 +65,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   // Container styles based on display mode
   const containerStyle = isModal
-    ? { flex: 1, backgroundColor: '#fff' }
+    ? { flex: 1, backgroundColor: "#fff" }
     : {
         width: isMobile ? 0 : 250,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: "#f8f9fa",
         borderRightWidth: 1,
-        borderRightColor: '#eee',
-        height: '100%',
+        borderRightColor: "#eee",
+        height: "100%",
       };
 
   // Content component
@@ -82,13 +84,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             paddingHorizontal: 20,
             paddingVertical: 15,
             borderBottomWidth: 1,
-            borderBottomColor: '#eee',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            borderBottomColor: "#eee",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Chat History</Text>
+          <Text style={{ fontSize: 20, fontWeight: "bold" }}>Chat History</Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={{ fontSize: 24 }}>✕</Text>
           </TouchableOpacity>
@@ -102,21 +104,23 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         style={{
           marginHorizontal: 15,
           marginVertical: 15,
-          backgroundColor: '#F79C4E',
+          backgroundColor: "#F79C4E",
           paddingVertical: 12,
           borderRadius: 10,
-          alignItems: 'center',
+          alignItems: "center",
           opacity: isLoading ? 0.5 : 1,
         }}
       >
-        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
           + New Chat
         </Text>
       </TouchableOpacity>
 
       {/* Loading Indicator */}
       {isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color="#F79C4E" />
         </View>
       ) : (
@@ -125,13 +129,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {activeSessions.length === 0 ? (
             <View
               style={{
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignItems: "center",
+                justifyContent: "center",
                 paddingVertical: 40,
               }}
             >
-              <Text style={{ color: '#999', fontSize: 14 }}>No chats yet</Text>
-              <Text style={{ color: '#999', fontSize: 12, marginTop: 5 }}>
+              <Text style={{ color: "#999", fontSize: 14 }}>No chats yet</Text>
+              <Text style={{ color: "#999", fontSize: 12, marginTop: 5 }}>
                 Start a new conversation
               </Text>
             </View>
@@ -148,18 +152,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     }}
                     style={{
                       backgroundColor:
-                        currentSessionId === session.id ? '#F5F5F5' : '#fff',
+                        currentSessionId === session.id ? "#F5F5F5" : "#fff",
                       paddingHorizontal: 12,
                       paddingVertical: 12,
                       marginVertical: 5,
                       borderRadius: 8,
-                      borderLeftWidth:
-                        currentSessionId === session.id ? 3 : 0,
+                      borderLeftWidth: currentSessionId === session.id ? 3 : 0,
                       borderLeftColor:
-                        currentSessionId === session.id ? '#F79C4E' : 'transparent',
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                        currentSessionId === session.id
+                          ? "#F79C4E"
+                          : "transparent",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
                     }}
                   >
                     <View style={{ flex: 1 }}>
@@ -167,8 +172,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         numberOfLines={1}
                         style={{
                           fontSize: 14,
-                          color: '#333',
-                          fontWeight: '500',
+                          color: "#333",
+                          fontWeight: "500",
                         }}
                       >
                         {session.title}
@@ -176,11 +181,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       <Text
                         style={{
                           fontSize: 11,
-                          color: '#999',
+                          color: "#999",
                           marginTop: 2,
                         }}
                       >
-                        {session.message_count || 0} messages • {session.total_tokens_used} tokens
+                        {session.message_count || 0} messages •{" "}
+                        {session.total_tokens_used} tokens
                       </Text>
                     </View>
 
@@ -199,9 +205,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   {selectedForDelete === session.id && (
                     <View
                       style={{
-                        backgroundColor: '#FFE5E5',
+                        backgroundColor: "#FFE5E5",
                         borderLeftWidth: 4,
-                        borderLeftColor: '#FF6B6B',
+                        borderLeftColor: "#FF6B6B",
                         padding: 10,
                         marginVertical: 5,
                         borderRadius: 4,
@@ -210,7 +216,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       <Text
                         style={{
                           fontSize: 12,
-                          color: '#721C24',
+                          color: "#721C24",
                           marginBottom: 8,
                         }}
                       >
@@ -218,9 +224,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       </Text>
                       <View
                         style={{
-                          flexDirection: 'row',
+                          flexDirection: "row",
                           gap: 8,
-                          justifyContent: 'flex-end',
+                          justifyContent: "flex-end",
                         }}
                       >
                         <TouchableOpacity
@@ -229,12 +235,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             paddingHorizontal: 12,
                             paddingVertical: 4,
                             borderRadius: 4,
-                            backgroundColor: '#fff',
+                            backgroundColor: "#fff",
                             borderWidth: 1,
-                            borderColor: '#ddd',
+                            borderColor: "#ddd",
                           }}
                         >
-                          <Text style={{ fontSize: 12, color: '#333' }}>
+                          <Text style={{ fontSize: 12, color: "#333" }}>
                             Cancel
                           </Text>
                         </TouchableOpacity>
@@ -244,10 +250,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             paddingHorizontal: 12,
                             paddingVertical: 4,
                             borderRadius: 4,
-                            backgroundColor: '#FF6B6B',
+                            backgroundColor: "#FF6B6B",
                           }}
                         >
-                          <Text style={{ fontSize: 12, color: '#fff', fontWeight: '600' }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#fff",
+                              fontWeight: "600",
+                            }}
+                          >
                             Delete
                           </Text>
                         </TouchableOpacity>
@@ -264,14 +276,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     style={{
                       marginVertical: 12,
                       borderTopWidth: 1,
-                      borderTopColor: '#eee',
+                      borderTopColor: "#eee",
                     }}
                   />
                   <Text
                     style={{
                       fontSize: 12,
-                      fontWeight: '600',
-                      color: '#999',
+                      fontWeight: "600",
+                      color: "#999",
                       marginVertical: 8,
                     }}
                   >
@@ -284,7 +296,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       key={session.id}
                       onPress={() => onSelectSession(session.id)}
                       style={{
-                        backgroundColor: '#fff',
+                        backgroundColor: "#fff",
                         paddingHorizontal: 12,
                         paddingVertical: 12,
                         marginVertical: 5,
@@ -296,7 +308,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         numberOfLines={1}
                         style={{
                           fontSize: 12,
-                          color: '#999',
+                          color: "#999",
                         }}
                       >
                         {session.title}
@@ -318,9 +330,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <View
         style={{
           width: 250,
-          backgroundColor: '#f8f9fa',
+          backgroundColor: "#f8f9fa",
           borderRightWidth: 1,
-          borderRightColor: '#eee',
+          borderRightColor: "#eee",
         }}
       >
         {renderContent()}
@@ -330,7 +342,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   // Otherwise render as modal/overlay
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       {renderContent()}
     </SafeAreaView>
   );

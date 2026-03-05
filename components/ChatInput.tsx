@@ -1,6 +1,6 @@
 /**
  * ChatInput.tsx
- * 
+ *
  * Reusable input component for composing chat messages
  * Handles:
  * - Text input with placeholder
@@ -9,7 +9,7 @@
  * - Accessibility and keyboard handling
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
     ActivityIndicator,
     Platform,
@@ -17,8 +17,8 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-} from 'react-native';
-import { isWithinTokenLimit } from '../app/services/tokenCounter';
+} from "react-native";
+import { isWithinTokenLimit } from "../services/tokenCounter";
 
 interface ChatInputProps {
   value: string;
@@ -43,14 +43,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isDisabled = false,
   currentTokens = 0,
   maxTokens = 1000,
-  placeholder = 'Ask me anything...',
+  placeholder = "Ask me anything...",
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  
+
   // Check if message would exceed token limit
-  const canSend = 
-    !isDisabled && 
-    !isLoading && 
+  const canSend =
+    !isDisabled &&
+    !isLoading &&
     value.trim().length > 0 &&
     isWithinTokenLimit(currentTokens, value, maxTokens);
 
@@ -63,15 +63,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <View
       style={{
-        backgroundColor: '#fff',
+        backgroundColor: "#fff",
         borderTopWidth: 1,
-        borderColor: '#ddd',
+        borderColor: "#ddd",
         paddingHorizontal: 10,
         paddingTop: 10,
-        paddingBottom: Platform.OS === 'ios' ? 1 : 15,
+        paddingBottom: Platform.OS === "ios" ? 1 : 15,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10 }}>
         {/* Text Input */}
         <TextInput
           value={value}
@@ -86,12 +86,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           editable={!isLoading && !isDisabled}
           style={{
             flex: 1,
-            backgroundColor: '#F5F5F5',
+            backgroundColor: "#F5F5F5",
             paddingHorizontal: 15,
             paddingVertical: 12,
             borderRadius: 25,
             borderWidth: 1,
-            borderColor: isFocused ? '#F79C4E' : '#DDD',
+            borderColor: isFocused ? "#F79C4E" : "#DDD",
             fontSize: 14,
             maxHeight: 100, // Allow multi-line with max height
           }}
@@ -104,9 +104,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           style={{
             width: 35,
             height: 35,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: canSend ? '#F79C4E' : '#CCCCCC',
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: canSend ? "#F79C4E" : "#CCCCCC",
             borderRadius: 22.5,
             opacity: canSend ? 1 : 0.6,
           }}
@@ -115,7 +115,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           {isLoading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={{ fontSize: 24, color: '#fff' }}>➤</Text>
+            <Text style={{ fontSize: 24, color: "#fff" }}>➤</Text>
           )}
         </TouchableOpacity>
       </View>

@@ -1,7 +1,7 @@
 // In app/_layout.tsx
 
-import { Stack } from 'expo-router';
-import { AuthProvider } from '../contexts/AuthContext'; // 1. Import your new AuthProvider
+import { Stack } from "expo-router";
+import { AuthProvider } from "../contexts/AuthContext"; // 1. Import your new AuthProvider
 
 /**
  * This is the root layout for the entire app.
@@ -16,9 +16,8 @@ export default function RootLayout() {
         // A common practice is to hide the default header at the root level,
         // as individual screens or nested layouts (like your tabs) will manage their own headers.
         screenOptions={{
-          headerShown: false, 
+          headerShown: false,
         }}
-
       >
         {/* 
           3. Define your main app screens/layouts here.
@@ -28,7 +27,6 @@ export default function RootLayout() {
         {/* This refers to the layout defined in 'app/(tabs)/_layout.tsx' */}
         <Stack.Screen name="(tabs)" />
 
-
         {/* These refer to your individual authentication screens */}
         <Stack.Screen name="Screens/Login" />
         <Stack.Screen name="Screens/StartScreen" />
@@ -37,19 +35,12 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/SetNewPassword" />
         <Stack.Screen name="Screens/ForgotPassword" />
         <Stack.Screen name="Screens/Settings" />
-<<<<<<< HEAD
         <Stack.Screen name="Screens/Signup" />
         <Stack.Screen name="Screens/PetInfoScreen" />
         <Stack.Screen name="Screens/ScanScreen" />
-        <Stack.Screen name="Screens/UploadImageScreen" />
-        <Stack.Screen name="Screens/ResultsScreen" />
+        <Stack.Screen name="Screens/Insights" />
+        <Stack.Screen name="Screens/ResultScreen" />
         <Stack.Screen name="Screens/TellMeMoreScreen" />
-        
-=======
-        <Stack.Screen name="Screens/AddPet" />
-        <Stack.Screen name="Screens/ViewPet" />
-        <Stack.Screen name="Screens/ArticleDetail" />
->>>>>>> origin/insights
       </Stack>
     </AuthProvider>
   );
