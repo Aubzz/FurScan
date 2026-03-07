@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -18,6 +17,8 @@ import {
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
+
+
 
 interface Scan {
   id: string;
@@ -275,41 +276,6 @@ const StartScreen = () => {
             )}
           </View>
         </ScrollView>
-
-        <View style={[styles.navBar, { paddingBottom: insets.bottom + 0 }]}>
-          {/* LEFT SIDE: Home & Chatbot */}
-          <TouchableOpacity style={styles.navButton} onPress={() => router.push('#' as any)}>
-            {/* UPDATED: Changed icon to solid 'home' and colored it primaryOrange */}
-            <Ionicons name="home" size={30} color={Colors.primaryOrange} />
-            <Text style={[styles.navText, { color: Colors.primaryOrange }]}>Home</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navButton} onPress={() => router.push('/chatbot')}>
-            <Ionicons name="chatbubble-ellipses-outline" size={30} color={Colors.textSecondary} />
-            <Text style={styles.navText}>Chatbot</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.navSpacer} />
-          
-          {/* RIGHT SIDE: Insights & Profile */}
-          <TouchableOpacity style={styles.navButton} onPress={() => router.push('#' as any)}>
-            <Ionicons name="stats-chart-outline" size={30} color={Colors.textSecondary} />
-            <Text style={styles.navText}>Insights</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navButton} onPress={() => router.push('/profile')}>
-            <Feather name="user" size={30} color={Colors.textSecondary} />
-            <Text style={styles.navText}>Profile</Text>
-          </TouchableOpacity>
-          
-          {/* CENTER: Scan Button */}
-          <TouchableOpacity 
-            style={[styles.scanButton, { bottom: Platform.OS === 'ios' ? insets.bottom + 20 : 40 }]}
-            onPress={() => router.push('/Screens/PetInfoScreen')}
-          >
-            <View style={styles.scanInner}>
-              <Ionicons name="scan-outline" size={32} color={Colors.white} />
-            </View>
-          </TouchableOpacity>
-        </View>
       </View>
     </GestureHandlerRootView>
   );
@@ -407,23 +373,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 20
   },
   emptyStateTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 },
-  emptyStateText: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-  navBar: { 
-    flexDirection: 'row', height: 85, backgroundColor: Colors.white,
-    borderTopLeftRadius: 30, borderTopRightRadius: 30,
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    elevation: 20, shadowColor: Colors.shadow, shadowOpacity: 0.05, shadowRadius: 10,
-    paddingHorizontal: 10,
-  },
-  navButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 10 },
-  navSpacer: { width: 80 }, 
-  navText: { fontSize: 10, color: Colors.textSecondary, marginTop: 4, fontWeight: '500' }, 
-  scanButton: { 
-    position: 'absolute', left: '50%', marginLeft: -25, 
-    width: 70, height: 70, borderRadius: 35, backgroundColor: Colors.white,
-    padding: 5, elevation: 10, shadowColor: Colors.primaryOrange, shadowOpacity: 0.4, shadowRadius: 12,
-  },
-  scanInner: { flex: 1, backgroundColor: Colors.primaryOrange, borderRadius: 30, justifyContent: 'center', alignItems: 'center' }
+  emptyStateText: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 }
 });
 
 export default StartScreen;

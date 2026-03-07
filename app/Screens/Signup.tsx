@@ -372,7 +372,7 @@ const SignupScreen = () => {
               color={agreedToTerms ? Colors.primaryOrange : undefined}
             />
             <Text style={styles.checkboxLabel}>
-              By proceeding, you agree on Furemedy&apos;s{' '}
+              By proceeding, you agree on FurScan&apos;s{' '}
               <Text style={styles.linkText}>Terms and Conditions</Text> and{' '}
               <Text style={styles.linkText}>Privacy Policy</Text>.
             </Text>

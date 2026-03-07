@@ -118,7 +118,7 @@ const CreateAccount = () => {
         />
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Welcome to </Text>
-          <Text style={styles.appName}>Furemedy!</Text>
+          <Text style={styles.appName}>FurScan!</Text>
         </View>
         <TouchableOpacity style={styles.buttonPrimary} onPress={handleSignUp}>
           <Text style={styles.buttonTextPrimary}>Sign up</Text>

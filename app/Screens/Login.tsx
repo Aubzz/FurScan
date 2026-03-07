@@ -66,7 +66,7 @@ const LoginScreen = () => {
         
         // 2. Navigate to the start screen (HomeScreen)
         // Adjust the path below to match your exact file structure
-        router.replace('/Screens/StartScreen'); 
+        router.replace('../(tabs)/home'); 
       } else {
         setError(data.msg || 'Invalid credentials. Please try again.');
       }
@@ -98,7 +98,7 @@ const LoginScreen = () => {
           <View style={styles.formContainer}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.title}>Welcome to </Text>
-              <Text style={[styles.title, { color: Colors.primaryOrange }]}>Furemedy!</Text>
+              <Text style={[styles.title, { color: Colors.primaryOrange }]}>FurScan!</Text>
             </View>
             <Text style={styles.subtitle}>Login to your account.</Text>
 

@@ -292,7 +292,7 @@ export default function DiagnosisReportScreen() {
         { 
           text: "Yes, Exit", 
           style: "destructive", 
-          onPress: () => router.replace('/Screens/StartScreen') 
+          onPress: () => router.replace('/(tabs)/home') 
         }
       ]
     );

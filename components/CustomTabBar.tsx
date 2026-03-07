@@ -1,115 +1,150 @@
-// In: components/CustomTabBar.tsx
-
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-// --- MODIFICATION 1: Import the necessary type ---
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Colors = {
   primaryOrange: '#F7924A',
-  lightOrange: '#FDEFE5',
-  textSecondary: '#888888',
+  textSecondary: '#666666',
   white: '#FFFFFF',
+  shadow: '#000',
 };
 
-// --- MODIFICATION 2: Apply the BottomTabBarProps type to the function ---
-// We destructure the `state` prop, which tells us which route is active.
 export function CustomTabBar({ state }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  // `state.index` gives us the index of the currently active tab.
-  // `state.routes` is an array of all the routes in our tab bar.
+  const router = useRouter();
+  
+  // Gets the name of the currently active tab (home, chatbot, insights, profile)
   const activeRouteName = state.routes[state.index].name;
 
   return (
-    <View style={[styles.navBarContainer, { paddingBottom: insets.bottom }]}>
-      <View style={styles.navBar}>
-        {/* --- MODIFICATION 3: We now check activeRouteName for styling --- */}
+    <View style={styles.container}>
+      <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
+        
+        {/* HOME */}
         <Link href="/home" asChild>
-          <TouchableOpacity style={styles.navButton}>
-            <MaterialCommunityIcons name="paw" size={26} color={activeRouteName === 'home' ? Colors.primaryOrange : Colors.textSecondary} />
-            <Text style={[styles.navText, activeRouteName === 'home' && styles.navTextActive]}>My Pets</Text>
+          <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
+            <Ionicons 
+              name={activeRouteName === 'home' ? 'home' : 'home-outline'} 
+              size={30} 
+              color={activeRouteName === 'home' ? Colors.primaryOrange : Colors.textSecondary} 
+            />
+            <Text style={[styles.navText, activeRouteName === 'home' && styles.navTextActive]}>Home</Text>
           </TouchableOpacity>
         </Link>
 
+        {/* CHATBOT */}
         <Link href="/chatbot" asChild>
-          <TouchableOpacity style={styles.navButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color={activeRouteName === 'chatbot' ? Colors.primaryOrange : Colors.textSecondary} />
+          <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
+            <Ionicons 
+              name={activeRouteName === 'chatbot' ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} 
+              size={30} 
+              color={activeRouteName === 'chatbot' ? Colors.primaryOrange : Colors.textSecondary} 
+            />
             <Text style={[styles.navText, activeRouteName === 'chatbot' && styles.navTextActive]}>Chatbot</Text>
           </TouchableOpacity>
         </Link>
         
-        <View style={styles.navButton} />
+        {/* SPACER FOR CENTER BUTTON */}
+        <View style={styles.navSpacer} />
 
-        <Link href="/search" asChild>
-          <TouchableOpacity style={styles.navButton}>
-            <Feather name="search" size={26} color={activeRouteName === 'search' ? Colors.primaryOrange : Colors.textSecondary} />
-            <Text style={[styles.navText, activeRouteName === 'search' && styles.navTextActive]}>Search</Text>
+        {/* INSIGHTS */}
+        <Link href="/insights" asChild>
+          <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
+            <Ionicons 
+              name={activeRouteName === 'insights' ? 'bulb-outline' : 'bulb-outline'} 
+              size={30} 
+              color={activeRouteName === 'insights' ? Colors.primaryOrange : Colors.textSecondary} 
+            />
+            <Text style={[styles.navText, activeRouteName === 'insights' && styles.navTextActive]}>Insights</Text>
           </TouchableOpacity>
         </Link>
 
+        {/* PROFILE */}
         <Link href="/profile" asChild>
-          <TouchableOpacity style={styles.navButton}>
-            <Feather name="user" size={26} color={activeRouteName === 'profile' ? Colors.primaryOrange : Colors.textSecondary} />
+          <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
+            <Feather 
+              name="user" 
+              size={30} 
+              color={activeRouteName === 'profile' ? Colors.primaryOrange : Colors.textSecondary} 
+            />
             <Text style={[styles.navText, activeRouteName === 'profile' && styles.navTextActive]}>Profile</Text>
           </TouchableOpacity>
         </Link>
       </View>
       
-      <TouchableOpacity style={[styles.scanButton, { bottom: 25 + insets.bottom }]}>
-        <Ionicons name="scan-outline" size={30} color={Colors.primaryOrange} />
+      {/* FLOATING SCAN BUTTON */}
+      <TouchableOpacity 
+        style={[styles.scanButton, { bottom: Platform.OS === 'ios' ? insets.bottom + 20 : 40 }]}
+        onPress={() => router.push('/Screens/PetInfoScreen')}
+        activeOpacity={0.8}
+      >
+        <View style={styles.scanInner}>
+          <Ionicons name="scan-outline" size={32} color={Colors.white} />
+        </View>
       </TouchableOpacity>
     </View>
   );
 }
 
-// Styles are unchanged
 const styles = StyleSheet.create({
-  navBarContainer: {
+  container: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    elevation: 20,
+    shadowColor: Colors.shadow, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 10,
   },
   navBar: {
     flexDirection: 'row',
-    height: 70,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    height: 85,
     backgroundColor: Colors.white,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 10,
   },
   navButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 10,
+  },
+  navSpacer: {
+    width: 80, // Leaves a gap for the floating button
   },
   navText: {
     fontSize: 10,
     color: Colors.textSecondary,
     marginTop: 4,
+    fontWeight: '500',
   },
   navTextActive: {
     color: Colors.primaryOrange,
-    fontWeight: 'bold',
   },
   scanButton: {
     position: 'absolute',
-    left: '50%',
-    marginLeft: -30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderColor: Colors.lightOrange,
-    borderWidth: 6,
+    left: '38%',
+    marginLeft: 10, // Perfectly centers the 70px wide button
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: Colors.white,
+    padding: 5,
+    elevation: 20,
+    shadowColor: Colors.primaryOrange,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  scanInner: {
+    flex: 1,
+    backgroundColor: Colors.primaryOrange,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
   },
 });
