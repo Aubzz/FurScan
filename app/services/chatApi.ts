@@ -12,13 +12,7 @@
  */
 
 import axios, { AxiosError } from "axios";
-import { Platform } from "react-native";
-
-// Configure API base URL based on platform
-const API_URL = Platform.select({
-  web: "http://localhost:8080",
-  default: "http://192.168.100.4:8081", // Replace with your backend IP
-});
+import { API_URL } from "../../constants/api";
 
 // =============================================
 // Type Definitions for API Requests/Responses
