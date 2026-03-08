@@ -1,8 +1,8 @@
 // In app/_layout.tsx
-import 'react-native-gesture-handler';
+import "react-native-gesture-handler";
 
-import { Stack } from 'expo-router';
-import { AuthProvider } from '../contexts/AuthContext'; // 1. Import your new AuthProvider
+import { Stack } from "expo-router";
+import { AuthProvider } from "../contexts/AuthContext"; // 1. Import your new AuthProvider
 
 /**
  * This is the root layout for the entire app.
@@ -17,7 +17,7 @@ export default function RootLayout() {
         // A common practice is to hide the default header at the root level,
         // as individual screens or nested layouts (like your tabs) will manage their own headers.
         screenOptions={{
-          headerShown: false, 
+          headerShown: false,
         }}
       >
         {/* 
@@ -39,10 +39,8 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/Signup" />
         <Stack.Screen name="Screens/PetInfoScreen" />
         <Stack.Screen name="Screens/ScanScreen" />
-        <Stack.Screen name="Screens/UploadImageScreen" />
-        <Stack.Screen name="Screens/ResultsScreen" />
+        <Stack.Screen name="Screens/ResultScreen" />
         <Stack.Screen name="Screens/TellMeMoreScreen" />
-        
       </Stack>
     </AuthProvider>
   );
