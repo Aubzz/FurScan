@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL } from "../../constants/api";
+import { useAuth } from "../../contexts/AuthContext";
 import { getToken, removeToken } from "../../utils/tokenStorage";
 
 // --- Theme Constants ---
@@ -48,6 +49,7 @@ type UserProfile = {
 const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { token: authToken } = useAuth();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,7 @@ const ProfileScreen = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await getToken();
+      const token = authToken ?? (await getToken());
       if (!token) {
         router.replace("/Screens/Login");
         return;
@@ -94,7 +96,7 @@ const ProfileScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, authToken]);
 
   useFocusEffect(
     useCallback(() => {
@@ -104,7 +106,11 @@ const ProfileScreen = () => {
 
   const handleSaveAboutMe = async () => {
     try {
-      const token = await getToken();
+      const token = authToken ?? (await getToken());
+      if (!token) {
+        router.replace("/Screens/Login");
+        return;
+      }
       const response = await fetch(`${API_URL}/api/profile/update`, {
         method: "PUT",
         headers: {
@@ -147,16 +153,30 @@ const ProfileScreen = () => {
       setIsUploading(true);
 
       const formData = new FormData();
-      const fileToUpload = {
-        uri: selectedImage.uri,
-        type: "image/jpeg",
-        name: `profile_${profile.id}.jpg`,
-      } as any;
+      const fileName =
+        selectedImage.fileName ||
+        `profile_${profile.id}.${selectedImage.uri.split(".").pop() || "jpg"}`;
+      const fileType = selectedImage.mimeType || "image/jpeg";
 
-      formData.append("profileImage", fileToUpload);
+      if (Platform.OS === "web") {
+        const imageResponse = await fetch(selectedImage.uri);
+        const imageBlob = await imageResponse.blob();
+        formData.append("profileImage", imageBlob, fileName);
+      } else {
+        const fileToUpload = {
+          uri: selectedImage.uri,
+          type: fileType,
+          name: fileName,
+        } as any;
+        formData.append("profileImage", fileToUpload);
+      }
 
       try {
-        const token = await getToken();
+        const token = authToken ?? (await getToken());
+        if (!token) {
+          router.replace("/Screens/Login");
+          return;
+        }
         const response = await fetch(`${API_URL}/api/profile/upload-image`, {
           method: "PUT",
           body: formData,

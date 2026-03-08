@@ -1,6 +1,6 @@
 /**
  * ChatInput.tsx
- * 
+ *
  * Reusable input component for composing chat messages
  * Handles:
  * - Text input with placeholder
@@ -9,16 +9,18 @@
  * - Accessibility and keyboard handling
  */
 
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  Text,
+  Pressable,
+  StyleSheet,
   TextInput,
-  TouchableOpacity,
   View,
-} from 'react-native';
-import { isWithinTokenLimit } from '../app/services/tokenCounter';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isWithinTokenLimit } from "../app/services/tokenCounter";
 
 interface ChatInputProps {
   value: string;
@@ -43,14 +45,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isDisabled = false,
   currentTokens = 0,
   maxTokens = 1000,
-  placeholder = 'Ask me anything...',
+  placeholder = "Ask me anything...",
 }) => {
+  const insets = useSafeAreaInsets();
   const [isFocused, setIsFocused] = useState(false);
-  
+  const [isSendHovered, setIsSendHovered] = useState(false);
+
   // Check if message would exceed token limit
-  const canSend = 
-    !isDisabled && 
-    !isLoading && 
+  const canSend =
+    !isDisabled &&
+    !isLoading &&
     value.trim().length > 0 &&
     isWithinTokenLimit(currentTokens, value, maxTokens);
 
@@ -62,65 +66,118 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <View
-      style={{
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderColor: '#ddd',
-        paddingHorizontal: 10,
-        paddingTop: 10,
-        paddingBottom: Platform.OS === 'ios' ? 1 : 15,
-      }}
+      style={[
+        styles.container,
+        {
+          paddingBottom: Platform.OS === "ios" ? insets.bottom + 6 : 8,
+        },
+      ]}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
-        {/* Text Input */}
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          onSubmitEditing={handleSend}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder={placeholder}
-          placeholderTextColor="#999"
-          multiline
-          maxLength={2000}
-          editable={!isLoading && !isDisabled}
-          style={{
-            flex: 1,
-            backgroundColor: '#F5F5F5',
-            paddingHorizontal: 15,
-            paddingVertical: 12,
-            borderRadius: 25,
-            borderWidth: 1,
-            borderColor: isFocused ? '#F79C4E' : '#DDD',
-            fontSize: 14,
-            maxHeight: 100, // Allow multi-line with max height
-          }}
-        />
+      <View
+        style={[
+          styles.composer,
+          {
+            borderColor: isFocused ? "#F79C4E" : "#D4D4D4",
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.inputWrapper,
+            {
+              backgroundColor: isFocused ? "#FFF8F2" : "#FFFFFF",
+            },
+          ]}
+        >
+          <TextInput
+            value={value}
+            onChangeText={onChangeText}
+            onSubmitEditing={handleSend}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder={placeholder}
+            placeholderTextColor="#8E8E8E"
+            multiline={false}
+            returnKeyType="send"
+            blurOnSubmit={false}
+            maxLength={2000}
+            editable={!isLoading && !isDisabled}
+            style={styles.textInput}
+          />
+        </View>
 
-        {/* Send Button */}
-        <TouchableOpacity
+        <Pressable
           onPress={handleSend}
           disabled={!canSend}
-          style={{
-            width: 35,
-            height: 35,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: canSend ? '#F79C4E' : '#CCCCCC',
-            borderRadius: 22.5,
-            opacity: canSend ? 1 : 0.6,
-          }}
-          activeOpacity={0.7}
+          onHoverIn={() => setIsSendHovered(true)}
+          onHoverOut={() => setIsSendHovered(false)}
+          style={[
+            styles.sendButton,
+            {
+              backgroundColor: isSendHovered ? "#F9B489" : "#F7924A",
+              opacity: 1,
+            },
+          ]}
         >
           {isLoading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={{ fontSize: 24, color: '#fff' }}>➤</Text>
+            <Ionicons
+              name="arrow-up"
+              size={19}
+              color="#fff"
+              style={styles.sendIcon}
+            />
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#F3F3F3",
+    paddingHorizontal: 10,
+    paddingTop: 8,
+  },
+  composer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 3,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingVertical: 6,
+  },
+  inputWrapper: {
+    flex: 1,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    marginRight: 10,
+  },
+  textInput: {
+    fontSize: 16,
+    fontWeight: "500",
+    letterSpacing: 0.1,
+    color: "#222222",
+    maxHeight: 82,
+    minHeight: 38,
+    paddingVertical: 6,
+    lineHeight: 20,
+  },
+  sendButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 0,
+  },
+  sendIcon: {
+    marginTop: -1,
+  },
+});
 
 export default ChatInput;

@@ -1,6 +1,6 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -13,77 +13,104 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../../contexts/AuthContext';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { API_URL } from "../../constants/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 // --- Constants ---
 const Colors = {
-  background: '#FFFFFF',
-  textPrimary: '#212529',
-  textSecondary: '#6c757d',
-  primaryOrange: '#F79C4E',
-  inputDefaultBorder: '#E0E0E0', 
-  error: '#D32F2F',
-  white: '#FFFFFF',
+  background: "#FFFFFF",
+  textPrimary: "#212529",
+  textSecondary: "#6c757d",
+  primaryOrange: "#F79C4E",
+  inputDefaultBorder: "#E0E0E0",
+  error: "#D32F2F",
+  white: "#FFFFFF",
 };
-
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://192.168.100.4:8080', 
-});
 
 const LoginScreen = () => {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+
+    const styleId = "hide-password-native-reveal-login";
+    if (document.getElementById(styleId)) return;
+
+    const styleElement = document.createElement("style");
+    styleElement.id = styleId;
+    styleElement.textContent = `
+      input[type="password"]::-ms-reveal,
+      input[type="password"]::-ms-clear {
+        display: none;
+        width: 0;
+        height: 0;
+      }
+    `;
+
+    document.head.appendChild(styleElement);
+
+    return () => {
+      const existing = document.getElementById(styleId);
+      if (existing) existing.remove();
+    };
+  }, []);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   // --- UPDATED NAVIGATION LOGIC ---
   const handleLoginPress = async () => {
     if (!email || !password) {
-      setError('Please enter both email and password.');
+      setError("Please enter both email and password.");
       return;
     }
     setIsLoading(true);
-    setError('');
+    setError("");
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         // 1. Update the authentication context with user data and token
         await login(data.user, data.token);
-        
+
         // 2. Navigate to the start screen (HomeScreen)
         // Adjust the path below to match your exact file structure
-        router.replace('../(tabs)/home'); 
+        router.replace("../(tabs)/home");
       } else {
-        setError(data.msg || 'Invalid credentials. Please try again.');
+        setError(data.msg || "Invalid credentials. Please try again.");
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('A network error occurred. Please check your connection.');
+      console.error("Login error:", err);
+      setError("A network error occurred. Please check your connection.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryOrange} />
-      
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.primaryOrange}
+      />
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Feather name="chevron-left" size={28} color={Colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Log In</Text>
@@ -94,16 +121,26 @@ const LoginScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingContainer}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.formContainer}>
             <View style={styles.welcomeContainer}>
               <Text style={styles.title}>Welcome to </Text>
-              <Text style={[styles.title, { color: Colors.primaryOrange }]}>FurScan!</Text>
+              <Text style={[styles.title, { color: Colors.primaryOrange }]}>
+                FurScan!
+              </Text>
             </View>
             <Text style={styles.subtitle}>Login to your account.</Text>
 
             <Text style={styles.inputLabel}>Email</Text>
-            <View style={[ styles.inputWrapper, focusedInput === 'email' && styles.inputFocused ]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedInput === "email" && styles.inputFocused,
+              ]}
+            >
               <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -112,13 +149,18 @@ const LoginScreen = () => {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                onFocus={() => setFocusedInput('email')}
+                onFocus={() => setFocusedInput("email")}
                 onBlur={() => setFocusedInput(null)}
               />
             </View>
 
             <Text style={styles.inputLabel}>Password</Text>
-            <View style={[ styles.inputWrapper, focusedInput === 'password' && styles.inputFocused ]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedInput === "password" && styles.inputFocused,
+              ]}
+            >
               <TextInput
                 style={styles.input}
                 placeholder="Password"
@@ -126,19 +168,24 @@ const LoginScreen = () => {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!isPasswordVisible}
-                onFocus={() => setFocusedInput('password')}
+                onFocus={() => setFocusedInput("password")}
                 onBlur={() => setFocusedInput(null)}
               />
-              <TouchableOpacity onPress={() => setPasswordVisible(!isPasswordVisible)}>
+              <TouchableOpacity
+                onPress={() => setPasswordVisible(!isPasswordVisible)}
+              >
                 <Ionicons
-                  name={isPasswordVisible ?  'eye-outline' : 'eye-off-outline'}
+                  name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
                   size={22}
                   color={Colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => router.push('/Screens/ForgotPassword')}>
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={() => router.push("/Screens/ForgotPassword")}
+            >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
@@ -149,21 +196,27 @@ const LoginScreen = () => {
               onPress={handleLoginPress}
               disabled={isLoading}
             >
-              {isLoading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.loginButtonText}>Login</Text>}
+              {isLoading ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don&apos;t have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/Screens/Signup')}>
+              <Text style={styles.signupText}>
+                Don&apos;t have an account?{" "}
+              </Text>
+              <TouchableOpacity onPress={() => router.push("/Screens/Signup")}>
                 <Text style={styles.signupLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      
+
       <Image
-        source={require('../../assets/images/login-dogs-illustration.png')}
+        source={require("../../assets/images/login-dogs-illustration.png")}
         style={styles.bottomImage}
       />
     </SafeAreaView>
@@ -173,26 +226,41 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: Colors.primaryOrange,
     paddingHorizontal: 10,
     paddingTop: 10,
     paddingBottom: 15,
   },
-  backButton: { width: 40, alignItems: 'center' },
-  headerTitle: { color: Colors.white, fontSize: 20, fontWeight: 'bold' },
+  backButton: { width: 40, alignItems: "center" },
+  headerTitle: { color: Colors.white, fontSize: 20, fontWeight: "bold" },
   keyboardAvoidingContainer: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 250 },
   formContainer: { paddingHorizontal: 25, paddingTop: 30 },
-  welcomeContainer: { flexDirection: 'row', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', color: Colors.textPrimary, textAlign: 'center' },
-  subtitle: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', marginBottom: 40 },
-  inputLabel: { fontSize: 14, color: Colors.textPrimary, marginBottom: 8, fontWeight: '500' },
+  welcomeContainer: { flexDirection: "row", justifyContent: "center" },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.textPrimary,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 40,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    fontWeight: "500",
+  },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.inputDefaultBorder,
@@ -202,27 +270,41 @@ const styles = StyleSheet.create({
   },
   inputFocused: { borderColor: Colors.primaryOrange, borderWidth: 1.5 },
   input: { flex: 1, height: 50, fontSize: 16, color: Colors.textPrimary },
-  forgotPasswordButton: { alignSelf: 'flex-end', marginBottom: 20 },
-  forgotPasswordText: { color: Colors.primaryOrange, fontSize: 14, fontWeight: '600' },
+  forgotPasswordButton: { alignSelf: "flex-end", marginBottom: 20 },
+  forgotPasswordText: {
+    color: Colors.primaryOrange,
+    fontSize: 14,
+    fontWeight: "600",
+  },
   loginButton: {
     backgroundColor: Colors.primaryOrange,
     paddingVertical: 15,
     borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minHeight: 50,
   },
   buttonDisabled: { opacity: 0.7 },
-  loginButtonText: { color: Colors.white, fontSize: 18, fontWeight: 'bold' },
-  errorText: { color: Colors.error, textAlign: 'center', marginBottom: 15, fontSize: 14 },
-  signupContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 25 },
+  loginButtonText: { color: Colors.white, fontSize: 18, fontWeight: "bold" },
+  errorText: {
+    color: Colors.error,
+    textAlign: "center",
+    marginBottom: 15,
+    fontSize: 14,
+  },
+  signupContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 25,
+  },
   signupText: { fontSize: 16, color: Colors.textSecondary },
-  signupLink: { color: Colors.primaryOrange, fontWeight: 'bold', fontSize: 16 },
+  signupLink: { color: Colors.primaryOrange, fontWeight: "bold", fontSize: 16 },
   bottomImage: {
-    width: '100%',
+    width: "100%",
     height: 250,
-    resizeMode: 'contain',
-    position: 'absolute',
+    resizeMode: "contain",
+    position: "absolute",
     bottom: 0,
     zIndex: -1,
   },

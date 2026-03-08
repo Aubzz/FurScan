@@ -1,8 +1,8 @@
 /**
  * chatbot.tsx
- * 
+ *
  * Main Chat Screen Component
- * 
+ *
  * Architecture:
  * - Uses Gemini API for AI responses
  * - Integrates with backend for chat session and message persistence
@@ -11,8 +11,9 @@
  * - Clean separation of concerns with modular components
  */
 
-import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -24,15 +25,15 @@ import {
   SafeAreaView,
   Text,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import ChatInput from '../../components/ChatInput';
-import ChatMessage from '../../components/ChatMessage';
-import ChatSidebar from '../../components/ChatSidebar';
-import TokenCounter from '../../components/TokenCounter';
-import { useAuth } from '../../contexts/AuthContext';
-import { resetConversation, sendMessage } from '../services/botpressApi';
+import ChatInput from "../../components/ChatInput";
+import ChatMessage from "../../components/ChatMessage";
+import ChatSidebar from "../../components/ChatSidebar";
+import { useAuth } from "../../contexts/AuthContext";
+import { resetConversation, sendMessage } from "../services/botpressApi";
 import {
   addChatMessage,
   ChatMessage as ChatMessageType,
@@ -42,8 +43,8 @@ import {
   getChatSession,
   getChatSessions,
   updateChatSession,
-} from '../services/chatApi';
-import { estimateTokens } from '../services/tokenCounter';
+} from "../services/chatApi";
+import { estimateTokens } from "../services/tokenCounter";
 
 // ===== TYPING ANIMATION COMPONENT =====
 
@@ -103,13 +104,13 @@ const TypingDots = () => {
   }, [animValue1, animValue2, animValue3]);
 
   return (
-    <View style={{ flexDirection: 'row', padding: 5 }}>
+    <View style={{ flexDirection: "row", padding: 5 }}>
       <Animated.View
         style={{
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: '#999',
+          backgroundColor: "#fff",
           marginHorizontal: 2,
           opacity: animValue1,
         }}
@@ -119,7 +120,7 @@ const TypingDots = () => {
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: '#999',
+          backgroundColor: "#fff",
           marginHorizontal: 2,
           opacity: animValue2,
         }}
@@ -129,7 +130,7 @@ const TypingDots = () => {
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: '#999',
+          backgroundColor: "#fff",
           marginHorizontal: 2,
           opacity: animValue3,
         }}
@@ -143,20 +144,24 @@ const TypingDots = () => {
 export default function ChatbotScreen() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const screenWidth = Dimensions.get('window').width;
+  const insets = useSafeAreaInsets();
+  const screenWidth = Dimensions.get("window").width;
   const isMobile = screenWidth < 768;
+  const bottomTabOffset = insets.bottom;
 
   // ===== STATE MANAGEMENT =====
 
   // Chat UI state
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
-  const [messageText, setMessageText] = useState('');
+  const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  
+
   // Chat session state
   const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(
+    null,
+  );
   const [sessionsLoading, setSessionsLoading] = useState(false);
 
   // Token state
@@ -179,7 +184,7 @@ export default function ChatbotScreen() {
         // Reset conversation when leaving screen
         resetConversation();
       };
-    }, [token, user])
+    }, [token, user]),
   );
 
   /**
@@ -212,7 +217,7 @@ export default function ChatbotScreen() {
         await selectSession(fetchedSessions[0].id);
       }
     } catch (err) {
-      console.error('❌ Error loading sessions:', err);
+      console.error("❌ Error loading sessions:", err);
     } finally {
       setSessionsLoading(false);
     }
@@ -225,19 +230,19 @@ export default function ChatbotScreen() {
     if (!token) return;
 
     try {
-      const newSession = await createChatSession(token, 'New Chat');
+      const newSession = await createChatSession(token, "New Chat");
       setSessions([newSession, ...sessions]);
       setCurrentSession(newSession);
       setMessages([]);
-      setMessageText('');
+      setMessageText("");
       setTokenLimitExceeded(false);
       resetConversation();
       setSidebarVisible(false);
 
       console.log(`✅ Started new chat session ${newSession.id}`);
     } catch (err) {
-      console.error('❌ Error creating session:', err);
-      alert('Failed to create new chat session');
+      console.error("❌ Error creating session:", err);
+      alert("Failed to create new chat session");
     }
   };
 
@@ -251,18 +256,17 @@ export default function ChatbotScreen() {
       const session = await getChatSession(token, sessionId);
       setCurrentSession(session);
       setMessages(session.messages || []);
-      setMessageText('');
+      setMessageText("");
 
       // Update token limit check
-      const exceeded =
-        session.total_tokens_used >= session.max_token_limit;
+      const exceeded = session.total_tokens_used >= session.max_token_limit;
       setTokenLimitExceeded(exceeded);
 
       setSidebarVisible(false);
       console.log(`✅ Loaded session ${sessionId}`);
     } catch (err) {
-      console.error('❌ Error loading session:', err);
-      alert('Failed to load chat session');
+      console.error("❌ Error loading session:", err);
+      alert("Failed to load chat session");
     }
   };
 
@@ -274,12 +278,12 @@ export default function ChatbotScreen() {
 
     try {
       await deleteChatSession(token, sessionId);
-      setSessions(sessions.filter(s => s.id !== sessionId));
+      setSessions(sessions.filter((s) => s.id !== sessionId));
 
       // If deleted session was current, load another or create new
       if (currentSession?.id === sessionId) {
         if (sessions.length > 1) {
-          const nextSession = sessions.find(s => s.id !== sessionId);
+          const nextSession = sessions.find((s) => s.id !== sessionId);
           if (nextSession) await selectSession(nextSession.id);
         } else {
           await startNewChat();
@@ -288,8 +292,8 @@ export default function ChatbotScreen() {
 
       console.log(`✅ Deleted session ${sessionId}`);
     } catch (err) {
-      console.error('❌ Error deleting session:', err);
-      alert('Failed to delete chat session');
+      console.error("❌ Error deleting session:", err);
+      alert("Failed to delete chat session");
     }
   };
 
@@ -315,9 +319,7 @@ export default function ChatbotScreen() {
     // Check token limit
     if (projectedTotal > currentSession.max_token_limit) {
       setTokenLimitExceeded(true);
-      alert(
-        'Token limit reached. Please start a new chat to continue.'
-      );
+      alert("Token limit reached. Please start a new chat to continue.");
       return;
     }
 
@@ -325,25 +327,19 @@ export default function ChatbotScreen() {
     const userMessage: ChatMessageType = {
       id: 0, // Temporary ID until saved to backend
       session_id: currentSession.id,
-      role: 'user',
+      role: "user",
       content: text,
       tokens_used: userTokens,
       created_at: new Date().toISOString(),
     };
 
     setMessages([...messages, userMessage]);
-    setMessageText('');
+    setMessageText("");
     setLoading(true);
 
     try {
       // Save user message to backend
-      await addChatMessage(
-        token,
-        currentSession.id,
-        'user',
-        text,
-        userTokens
-      );
+      await addChatMessage(token, currentSession.id, "user", text, userTokens);
 
       // Get bot response
       const botResponse = await sendMessage(text);
@@ -355,57 +351,49 @@ export default function ChatbotScreen() {
       const assistantMessage: ChatMessageType = {
         id: 0, // Temporary ID
         session_id: currentSession.id,
-        role: 'assistant',
+        role: "assistant",
         content: botResponse,
         tokens_used: botTokens,
         created_at: new Date().toISOString(),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
 
       // Save bot message to backend
       await addChatMessage(
         token,
         currentSession.id,
-        'assistant',
+        "assistant",
         botResponse,
-        botTokens
+        botTokens,
       );
 
       // Refresh session to get updated token count
-      const updatedSession = await getChatSession(
-        token,
-        currentSession.id
-      );
+      const updatedSession = await getChatSession(token, currentSession.id);
       setCurrentSession(updatedSession);
 
       // Update session title if this is the first message
       if (messages.length === 0) {
-        const firstMessageText = text.substring(0, 50) + 
-          (text.length > 50 ? '...' : '');
+        const firstMessageText =
+          text.substring(0, 50) + (text.length > 50 ? "..." : "");
         await updateChatSession(token, currentSession.id, {
           title: firstMessageText,
         });
 
         // Update local sessions list
         setSessions(
-          sessions.map(s =>
-            s.id === currentSession.id
-              ? { ...s, title: firstMessageText }
-              : s
-          )
+          sessions.map((s) =>
+            s.id === currentSession.id ? { ...s, title: firstMessageText } : s,
+          ),
         );
       }
 
       // Check if approaching limit
-      if (
-        updatedSession.total_tokens_used >=
-        updatedSession.max_token_limit
-      ) {
+      if (updatedSession.total_tokens_used >= updatedSession.max_token_limit) {
         setTokenLimitExceeded(true);
       }
     } catch (err) {
-      console.error('❌ Error sending message:', err);
+      console.error("❌ Error sending message:", err);
 
       // Remove user message from local state if failed
       setMessages(messages.filter((m, i) => i !== messages.length - 1));
@@ -413,7 +401,7 @@ export default function ChatbotScreen() {
       // Handle token limit error
       if ((err as any)?.response?.status === 403) {
         setTokenLimitExceeded(true);
-        alert('Token limit exceeded. Please start a new chat.');
+        alert("Token limit exceeded. Please start a new chat.");
         return;
       }
 
@@ -421,12 +409,12 @@ export default function ChatbotScreen() {
       const errorMessage: ChatMessageType = {
         id: 0,
         session_id: currentSession.id,
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
         tokens_used: 0,
         created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
     }
@@ -442,15 +430,23 @@ export default function ChatbotScreen() {
 
   // Determine layout based on screen size
   const showPersistentSidebar = !isMobile && sessions.length > 0;
+  const displayName = user?.firstName || user?.first_name || "Friend";
+  const usedTokens = currentSession?.total_tokens_used ?? 0;
+  const maxTokens = currentSession?.max_token_limit ?? 1000;
+  const tokenPercentage = Math.min(
+    Math.round((usedTokens / Math.max(maxTokens, 1)) * 100),
+    100,
+  );
+  const remainingTokens = Math.max(maxTokens - usedTokens, 0);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <View style={{ flex: 1, flexDirection: 'row' }}>
+        <View style={{ flex: 1, flexDirection: "row" }}>
           {/* ===== PERSISTENT SIDEBAR (Desktop) ===== */}
           {showPersistentSidebar && (
             <ChatSidebar
@@ -465,48 +461,174 @@ export default function ChatbotScreen() {
           )}
 
           {/* ===== MAIN CHAT AREA ===== */}
-          <View style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "#fff",
+              paddingBottom: bottomTabOffset,
+            }}
+          >
             {/* Header */}
             <View
               style={{
                 paddingTop: 10,
-                paddingBottom: 8,
-                paddingHorizontal: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                paddingBottom: 10,
+                paddingHorizontal: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
                 borderBottomWidth: 1,
-                borderBottomColor: '#eee',
+                borderBottomColor: "#E7E7E7",
+                backgroundColor: "#FFFFFF",
+                minHeight: 64,
               }}
             >
-              <TouchableOpacity onPress={() => router.back()}>
-                <Text style={{ fontSize: 24, fontWeight: '300' }}>←</Text>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                activeOpacity={0.75}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#FFF3EA",
+                  borderWidth: 1,
+                  borderColor: "#F8D9C3",
+                }}
+              >
+                <Ionicons name="chevron-back" size={22} color="#F7924A" />
               </TouchableOpacity>
-              <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
-                Chat with AI bot
-              </Text>
+
+              <View style={{ flex: 1, marginHorizontal: 12 }}>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "700",
+                    color: "#1A1A1A",
+                    letterSpacing: -0.3,
+                  }}
+                >
+                  <Text style={{ color: "#F7924A", fontWeight: "800" }}>
+                    FurScan AI
+                  </Text>{" "}
+                  <Text style={{ color: "#1A1A1A", fontWeight: "700" }}>
+                    Bot
+                  </Text>
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "500",
+                    color: "#757575",
+                    marginTop: 2,
+                  }}
+                >
+                  Ask anything about your pet’s skin health
+                </Text>
+              </View>
+
               {isMobile && (
                 <TouchableOpacity
                   onPress={() => setSidebarVisible(true)}
                   disabled={loading}
-                  style={{ opacity: loading ? 0.5 : 1 }}
+                  style={{
+                    opacity: loading ? 0.5 : 1,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#FFF3EA",
+                    borderWidth: 1,
+                    borderColor: "#F8D9C3",
+                  }}
                 >
-                  <Text style={{ fontSize: 24 }}>☰</Text>
+                  <Ionicons name="menu" size={20} color="#F7924A" />
                 </TouchableOpacity>
               )}
-              {!isMobile && <View style={{ width: 24 }} />}
+              {!isMobile && <View style={{ width: 40 }} />}
             </View>
 
-            {/* Token Counter */}
+            {/* Token Usage */}
             {currentSession && (
-              <View style={{ paddingHorizontal: 20, paddingVertical: 15 }}>
-                <TokenCounter
-                  currentTokens={currentSession.total_tokens_used}
-                  maxTokens={currentSession.max_token_limit}
-                  isLimitExceeded={tokenLimitExceeded}
-                  showLabel
-                  size="medium"
-                />
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  paddingHorizontal: 10,
+                  paddingTop: 8,
+                  paddingBottom: 6,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#EDEDED",
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "600",
+                      color: "#2F2F2F",
+                      letterSpacing: 0.1,
+                    }}
+                  >
+                    Token Usage
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "700",
+                      color: "#3DAE4B",
+                      letterSpacing: 0.1,
+                    }}
+                  >
+                    {usedTokens}/{maxTokens}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    height: 8,
+                    backgroundColor: "#E2E2E2",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: `${tokenPercentage}%`,
+                      height: "100%",
+                      backgroundColor: "#42B24D",
+                      borderRadius: 8,
+                    }}
+                  />
+                </View>
+
+                <View
+                  style={{
+                    marginTop: 4,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 10, fontWeight: "500", color: "#555" }}
+                  >
+                    {remainingTokens} left
+                  </Text>
+                  <Text
+                    style={{ fontSize: 10, fontWeight: "500", color: "#555" }}
+                  >
+                    {tokenPercentage}%
+                  </Text>
+                </View>
               </View>
             )}
 
@@ -515,12 +637,19 @@ export default function ChatbotScreen() {
               <View
                 style={{
                   flex: 1,
-                  justifyContent: 'center',
-                  alignItems: 'center',
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
                 <ActivityIndicator size="large" color="#F79C4E" />
-                <Text style={{ marginTop: 10, color: '#999' }}>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    color: "#777",
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
                   Loading chat...
                 </Text>
               </View>
@@ -528,43 +657,47 @@ export default function ChatbotScreen() {
               <View
                 style={{
                   flex: 1,
-                  justifyContent: 'center',
-                  alignItems: 'center',
+                  justifyContent: "center",
+                  alignItems: "center",
                   paddingHorizontal: 30,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 18,
-                    fontWeight: 'bold',
-                    color: '#FF6B6B',
+                    fontWeight: "700",
+                    color: "#FF6B6B",
                     marginBottom: 15,
-                    textAlign: 'center',
+                    textAlign: "center",
+                    letterSpacing: -0.1,
                   }}
                 >
                   Token Limit Reached
                 </Text>
                 <Text
                   style={{
-                    fontSize: 14,
-                    color: '#666',
+                    fontSize: 15,
+                    color: "#666",
                     marginBottom: 25,
-                    textAlign: 'center',
+                    textAlign: "center",
+                    lineHeight: 21,
                   }}
                 >
-                  This chat has used {currentSession.total_tokens_used} of{' '}
+                  This chat has used {currentSession.total_tokens_used} of{" "}
                   {currentSession.max_token_limit} available tokens.
                 </Text>
                 <TouchableOpacity
                   onPress={startNewChat}
                   style={{
-                    backgroundColor: '#F79C4E',
+                    backgroundColor: "#F79C4E",
                     paddingHorizontal: 30,
                     paddingVertical: 12,
                     borderRadius: 25,
                   }}
                 >
-                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                  <Text
+                    style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}
+                  >
                     Start New Chat
                   </Text>
                 </TouchableOpacity>
@@ -573,27 +706,41 @@ export default function ChatbotScreen() {
               <>
                 {/* Greeting (only on first load) */}
                 {messages.length === 0 && (
-                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                  <View
+                    style={{
+                      alignItems: "center",
+                      paddingTop: 24,
+                      paddingBottom: 12,
+                    }}
+                  >
                     <Image
-                      source={require('../../assets/images/dogbot.png')}
+                      source={require("../../assets/images/chatbot.png")}
                       style={{
-                        width: 70,
-                        height: 70,
-                        borderRadius: 35,
-                        marginBottom: 5,
+                        width: 72,
+                        height: 72,
+                        borderRadius: 36,
+                        marginBottom: 8,
                       }}
                     />
-                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-                      Good morning, Friend
+                    <Text
+                      style={{
+                        fontSize: 23,
+                        fontWeight: "700",
+                        color: "#1F1F1F",
+                        letterSpacing: -0.2,
+                      }}
+                    >
+                      Good morning, {displayName}
                     </Text>
                     <Text
                       style={{
-                        color: '#777',
-                        marginTop: 3,
-                        fontSize: 13,
+                        color: "#555",
+                        marginTop: 4,
+                        fontSize: 16,
+                        fontWeight: "500",
                       }}
                     >
-                      How can I help you and your pet?
+                      How can I help you and your pets today?
                     </Text>
                   </View>
                 )}
@@ -603,8 +750,8 @@ export default function ChatbotScreen() {
                   ref={flatListRef}
                   data={messages}
                   keyExtractor={(_, index) => index.toString()}
-                  style={{ flex: 1, paddingHorizontal: 15 }}
-                  contentContainerStyle={{ paddingBottom: 20 }}
+                  style={{ flex: 1, paddingHorizontal: 14 }}
+                  contentContainerStyle={{ paddingBottom: 20, paddingTop: 6 }}
                   onContentSizeChange={() =>
                     flatListRef.current?.scrollToEnd({ animated: true })
                   }
@@ -612,6 +759,7 @@ export default function ChatbotScreen() {
                     <ChatMessage
                       role={item.role}
                       text={item.content}
+                      createdAt={item.created_at}
                       onOptionPress={sendChatMessage}
                     />
                   )}
@@ -619,8 +767,8 @@ export default function ChatbotScreen() {
                     loading ? (
                       <View
                         style={{
-                          alignSelf: 'flex-start',
-                          backgroundColor: '#E5E5EA',
+                          alignSelf: "flex-start",
+                          backgroundColor: "#F79C4A",
                           padding: 10,
                           borderRadius: 15,
                           marginVertical: 10,
@@ -644,6 +792,7 @@ export default function ChatbotScreen() {
                 isDisabled={tokenLimitExceeded}
                 currentTokens={currentSession.total_tokens_used}
                 maxTokens={currentSession.max_token_limit}
+                placeholder="Ask me anything about your pet’s skin & care..."
               />
             )}
           </View>
@@ -652,16 +801,16 @@ export default function ChatbotScreen() {
           {isMobile && sidebarVisible && (
             <View
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.3)',
+                backgroundColor: "rgba(0,0,0,0.3)",
               }}
             >
-              <View style={{ flex: 1, flexDirection: 'row' }}>
-                <View style={{ width: '75%' }}>
+              <View style={{ flex: 1, flexDirection: "row" }}>
+                <View style={{ width: "75%" }}>
                   <ChatSidebar
                     sessions={sessions}
                     currentSessionId={currentSession?.id || null}
