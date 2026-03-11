@@ -305,18 +305,37 @@ export default function DiagnosisReportScreen() {
     }
     setLoading(true);
     try {
-      const base64Image = await FileSystem.readAsStringAsync(imageUri as string, { encoding: 'base64' });
-      const imageSrc = `data:image/jpeg;base64,${base64Image}`;
+      let imageSrc = '';
+      let targetUri = imageUri as string;
 
+      // 1. If the URI is a relative path from your backend, make it a full URL
+      if (targetUri.startsWith('/uploads/')) {
+        targetUri = `http://192.168.100.4:8080${targetUri}`;
+      }
+
+      // 2. Check if the URI is a network URL (http:// or https://)
+      if (targetUri.startsWith('http')) {
+        // Download the remote image to the device's temporary cache first
+        const tempFileUri = `${FileSystem.cacheDirectory}temp_pdf_image.jpg`;
+        const { uri: localUri } = await FileSystem.downloadAsync(targetUri, tempFileUri);
+        
+        // Read the freshly downloaded local file
+        const base64Image = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
+        imageSrc = `data:image/jpeg;base64,${base64Image}`;
+      } else {
+        // 3. It's already a local device file (file://... from the camera)
+        const base64Image = await FileSystem.readAsStringAsync(targetUri, { encoding: 'base64' });
+        imageSrc = `data:image/jpeg;base64,${base64Image}`;
+      }
       const aiResultsHtml = aiResultsArray
-        .map((res: ResultItem) => `
-          <div style="margin-bottom: 8px;">
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;">
-              <span><b>${res.name}</b></span>
+        .map((res: ResultItem, index: number) => `
+          <div class="ai-item">
+            <div class="ai-label">
+              <span>${res.name}</span>
               <span>${res.score}%</span>
             </div>
-            <div style="width:100%;background:#eee;height:6px;border-radius:3px;">
-              <div style="width:${res.score}%;background:${triage.color};height:100%;border-radius:3px;"></div>
+            <div class="confidence-bar">
+              <div class="confidence-fill" style="width:${res.score}%; background:${index === 0 ? triage.color : '#efb36d'};"></div>
             </div>
           </div>
         `)
@@ -324,43 +343,165 @@ export default function DiagnosisReportScreen() {
 
       const symptomsHtml = userSymptoms.length > 0
         ? userSymptoms.map((s: string) => `<li>${s}</li>`).join('')
-        : "<li>No manual symptoms reported</li>";
+        : "<li><i>No manual symptoms reported</i></li>";
 
       const html = `
         <html>
-          <head><style>body { font-family: Arial; padding: 20px; }</style></head>
+          <head>
+            <style>
+              @page { margin: 25px; size: A4 portrait; }
+              body { 
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+                color: #000000; 
+                line-height: 1.4; 
+                font-size: 12px; 
+                margin: 0; 
+                padding: 0; 
+              }
+              .header { 
+                text-align: center; 
+                padding-bottom: 12px; 
+                border-bottom: 3px solid ${triage.color}; 
+                margin-bottom: 20px; 
+              }
+              .header h1 { 
+                margin: 0; 
+                font-size: 24px; 
+                color: ${triage.color}; 
+                text-transform: uppercase; 
+                letter-spacing: 1px; 
+              }
+              .header p { margin: 4px 0 0; font-size: 10px; color: #000000; text-transform: uppercase; }
+              
+              /* Two Column Layout for the top section */
+              .top-section { display: flex; align-items: stretch; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+              
+              .left-column { flex: 1.5; display: flex; flex-direction: column; gap: 15px; }
+              .right-column { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+              
+              .pet-image { width: 100%; max-width: 220px; height: 220px; object-fit: cover; border-radius: 12px; border: 4px solid ${triage.color}; }
+              .triage-badge { 
+                background-color: ${triage.color}; 
+                color: #ffffff; /* Changed to white so it contrasts with the badge background */
+                padding: 6px 16px; 
+                border-radius: 20px; 
+                font-weight: bold; 
+                font-size: 12px; 
+                margin-top: -15px; 
+                position: relative; 
+                z-index: 10;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+
+              .box { background: #F9F9F9; padding: 15px; border-radius: 10px; }
+              .box h2, h3 { margin-top: 0; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; }
+              .box h2 { font-size: 14px; border-bottom: 1px solid #EAEAEA; padding-bottom: 6px; margin-bottom: 10px; }
+              .box h3 { font-size: 12px; color: ${triage.color}; margin-bottom: 6px; }
+              
+              .patient-grid { display: flex; justify-content: space-between; margin-bottom: 15px; }
+              .patient-grid div { flex: 1; }
+              .patient-label { font-size: 10px; color: #000000; font-weight: bold; margin-bottom: 2px; }
+              .patient-val { font-size: 14px; font-weight: bold; color: #000000; }
+
+              .ai-item { margin-bottom: 8px; }
+              .ai-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 3px; color: #000000; }
+              .confidence-bar { width: 100%; background: #e29a2d; height: 6px; border-radius: 3px; }
+              .confidence-fill { height: 100%; border-radius: 3px; } /* Removed the invalid #e29a2d hex from here */
+
+              ul { margin: 5px 0 0 0; padding-left: 18px; }
+              li { margin-bottom: 5px; color: #000000; }
+              p { margin: 5px 0; }
+
+              .two-col-grid { display: flex; gap: 15px; margin-bottom: 15px; }
+              .two-col-grid > div { flex: 1; }
+
+              .symptom-box { background: #F0F9F0; border-left: 4px solid #5CB85C; }
+              .urgent-box { background: #FEF2F2; border-left: 4px solid #D9534F; }
+              .warning-box { background: #FFF9F5; border-left: 4px solid #F7924A; }
+              .safe-box { background: #F4F7FA; border-left: 4px solid #5CB85C; }
+
+              .footer { text-align: center; margin-top: 15px; font-size: 9px; color: #000000; border-top: 1px solid #EAEAEA; padding-top: 10px; }
+            </style>
+          </head>
           <body>
-            <h1 style="color: ${triage.color}; border-bottom: 3px solid ${triage.color};">${triage.label}</h1>
             
-            <h2>Pet Information</h2>
-            <p><b>Name:</b> ${petName || 'N/A'} | <b>Age:</b> ${petAge || 'N/A'} | <b>Breed:</b> ${petBreed || 'N/A'}</p>
-            
-            <div style="text-align:center; margin: 20px 0;">
-              <img src="${imageSrc}" style="width: 250px; border-radius: 10px;"/>
+            <div class="header">
+              <h1>Skin Analysis Report</h1>
+              <p>Generated by FurScan on ${new Date().toLocaleDateString()}</p>
             </div>
 
-            <h2>AI Analysis</h2>
-            <p><b>Detected Lesions:</b> ${detectedSkinLesions}</p>
-            <h3>Confidence Breakdown</h3>
-            ${aiResultsHtml}
+            <div class="top-section">
+              <div class="left-column">
+                <div class="box">
+                  <h2>Patient Information</h2>
+                  <div class="patient-grid">
+                    <div>
+                      <div class="patient-label">NAME</div>
+                      <div class="patient-val">${petName || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div class="patient-label">BREED</div>
+                      <div class="patient-val">${petBreed || 'Unknown'}</div>
+                    </div>
+                    <div>
+                      <div class="patient-label">AGE</div>
+                      <div class="patient-val">${petAge || 'N/A'}</div>
+                    </div>
+                  </div>
 
-            <h2>Diagnosis</h2>
-            <p><b>Preliminary Diagnosis:</b> ${currentCondition}</p>
-            <p><b>Assessment:</b> ${details.features}</p>
+                  <h3>Detected Lesions</h3>
+                  <p style="font-style: italic; color: #000000; margin-bottom: 15px;">${detectedSkinLesions}</p>
 
-            <h2>User-Reported Symptoms</h2>
-            <ul>${symptomsHtml}</ul>
+                  <h3>Confidence Breakdown</h3>
+                  ${aiResultsHtml}
+                </div>
+              </div>
 
-            <h2>Care Instructions</h2>
-            <ul>${(details.firstAid || []).map((item: string) => `<li>${item}</li>`).join('')}</ul>
+              <div class="right-column">
+                <img class="pet-image" src="${imageSrc}" />
+                <div class="triage-badge">${triage.label}</div>
+              </div>
+            </div>
 
-            <h2>Recommendation</h2>
-            <p style="background:#f9f9f9;padding:10px;border-left:4px solid ${triage.color};">
-              ${details.urgency}
-            </p>
+            <div class="box" style="margin-bottom: 15px; border-left: 4px solid ${triage.color};">
+              <h2>Possible Causes</h2>
+              <p><strong>Primary Match:</strong> <span style="color: ${triage.color}; font-weight: bold; font-size: 14px;">${currentCondition}</span></p>
+              <p style="margin-top: 8px;"><strong>Assessment:</strong> ${details.features}</p>
+            </div>
 
-            <hr/>
-            <p style="font-size:10px;color:#999;">Generated by FurScan on ${new Date().toLocaleDateString()}</p>
+            <div class="two-col-grid">
+              <div class="box symptom-box">
+                <h3 style="color: #2E7D32;">User-Reported Symptoms</h3>
+                <ul>${symptomsHtml}</ul>
+              </div>
+
+              <div class="box ${details.severity === 'high' ? 'urgent-box' : (details.severity === 'moderate' ? 'warning-box' : 'safe-box')}">
+                <h3 style="color: ${details.severity === 'high' ? '#D9534F' : (details.severity === 'moderate' ? '#F7924A' : '#5CB85C')};">Recommendation</h3>
+                <p><strong>Action Required:</strong></p>
+                <p style="font-size: 13px; font-weight: bold; color: #000000;">${details.urgency}</p>
+              </div>
+            </div>
+
+            <div class="box">
+              <h2>Care & Monitoring Instructions</h2>
+              
+              <div class="two-col-grid" style="margin-bottom: 0;">
+                <div>
+                  <h3>First Aid / Care</h3>
+                  <ul>${(details.firstAid || []).map((item: string) => `<li>${item}</li>`).join('')}</ul>
+                </div>
+                <div>
+                  <h3>Watch For Changes</h3>
+                  <ul>${(details.watchFor || []).map((item: string) => `<li>${item}</li>`).join('')}</ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer">
+              This report is generated by FurScan AI. It is intended for informational purposes, to assist with visual triage, and does not replace professional veterinary diagnosis or advice.
+            </div>
+
           </body>
         </html>
       `;

@@ -15,9 +15,15 @@ const Colors = {
 export function CustomTabBar({ state }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  
   
   // Gets the name of the currently active tab (home, chatbot, insights, profile)
   const activeRouteName = state.routes[state.index].name;
+
+  if (activeRouteName === 'chatbot') {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

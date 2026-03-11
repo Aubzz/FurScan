@@ -14,8 +14,7 @@ export default function TabsLayout() {
     >
       {/* Each screen in the tab bar is defined here. The 'name' must match the filename. */}
       <Tabs.Screen name="home" options={{ headerShown: false }} />
-      <Tabs.Screen name="chatbot" options={{ headerShown: false }} />
-      <Tabs.Screen name="ScanScreen" options={{ headerShown: false }} />
+      <Tabs.Screen name="chatbot" options={{ headerShown: false, tabBarStyle: { display: 'none' } }} />      <Tabs.Screen name="ScanScreen" options={{ headerShown: false }} />
       <Tabs.Screen name="insights" options={{ headerShown: false }} />
       <Tabs.Screen name="profile" options={{ headerShown: false }} />
     </Tabs>

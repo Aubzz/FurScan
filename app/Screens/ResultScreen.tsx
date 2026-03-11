@@ -134,7 +134,7 @@ export default function ResultsScreen() {
             <TouchableOpacity 
               style={[styles.continueBtn, { backgroundColor: '#27AE60' }]} 
               onPress={() => router.replace({
-                pathname: '/Screens/StartScreen' as any,
+                pathname: '/(tabs)/home' as any,
                 params: { petName, petAge, petBreed }
               })}
             >
@@ -146,7 +146,7 @@ export default function ResultsScreen() {
           <TouchableOpacity 
             style={styles.scanAgainBtn} 
             onPress={() => router.replace({
-              pathname: '/Screens/ScanScreen' as any,
+              pathname: '/(tabs)/ScanScreen' as any,
               params: { petName, petAge, petBreed }
             })}
           >

@@ -1,138 +1,96 @@
 /**
- * TokenCounter.tsx
+ * tokenCounter.ts
  * 
- * Component for displaying token usage and status
- * Shows:
- * - Current token usage vs limit
- * - Visual progress indicator
- * - Status color (green/yellow/red)
- * - Warning when approaching/exceeding limit
+ * Utility functions for estimating and tracking token usage
+ * Uses a simple heuristic: ~4 characters per token on average
+ * This is conservative to avoid exceeding limits
  */
-
-import React from 'react';
-import { Text, View } from 'react-native';
-import { formatTokenDisplay, getTokenStatusColor } from '../app/services/tokenCounter';
-
-interface TokenCounterProps {
-  currentTokens: number;
-  maxTokens: number;
-  isLimitExceeded?: boolean;
-  showLabel?: boolean;
-  size?: 'small' | 'medium' | 'large';
-}
 
 /**
- * TokenCounter Component
- * Displays token usage with visual feedback
+ * Estimate token count for a given text
+ * Using the rule of thumb: 1 token ≈ 4 characters (English)
+ * 
+ * @param text - The text to estimate tokens for
+ * @returns Estimated token count
  */
-export const TokenCounter: React.FC<TokenCounterProps> = ({
-  currentTokens,
-  maxTokens,
-  isLimitExceeded = false,
-  showLabel = true,
-  size = 'medium',
-}) => {
-  const displayInfo = formatTokenDisplay(currentTokens, maxTokens);
-  const statusColor = getTokenStatusColor(displayInfo.percentage);
+export const estimateTokens = (text: string): number => {
+  if (!text) return 0;
   
-  // Determine sizing based on size prop
-  const sizeStyles = {
-    small: { fontSize: 12, height: 4, barHeight: 8 },
-    medium: { fontSize: 14, height: 6, barHeight: 12 },
-    large: { fontSize: 16, height: 8, barHeight: 16 },
-  };
-
-  const style = sizeStyles[size];
-
-  return (
-    <View style={{ gap: 8 }}>
-      {/* Token Count Display */}
-      {showLabel && (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: style.fontSize, fontWeight: '600', color: '#333' }}>
-            Token Usage
-          </Text>
-          <Text
-            style={{
-              fontSize: style.fontSize,
-              fontWeight: '500',
-              color: isLimitExceeded ? '#FF6B6B' : statusColor,
-            }}
-          >
-            {displayInfo.used}
-          </Text>
-        </View>
-      )}
-
-      {/* Progress Bar */}
-      <View
-        style={{
-          height: style.barHeight,
-          backgroundColor: '#E0E0E0',
-          borderRadius: 100,
-          overflow: 'hidden',
-        }}
-      >
-        <View
-          style={{
-            height: '100%',
-            width: `${Math.min(displayInfo.percentage, 100)}%`,
-            backgroundColor: statusColor,
-            borderRadius: 100,
-          }}
-        />
-      </View>
-
-      {/* Status Text */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: style.fontSize - 2, color: '#666' }}>
-          {displayInfo.remaining}
-        </Text>
-        <Text
-          style={{
-            fontSize: style.fontSize - 2,
-            fontWeight: '500',
-            color: displayInfo.percentage > 80 ? '#FF6B6B' : '#666',
-          }}
-        >
-          {displayInfo.percentage}%
-        </Text>
-      </View>
-
-      {/* Warning Messages */}
-      {displayInfo.percentage >= 80 && !isLimitExceeded && (
-        <View
-          style={{
-            backgroundColor: '#FFF3CD',
-            borderLeftWidth: 4,
-            borderLeftColor: '#FFA500',
-            padding: 10,
-            borderRadius: 4,
-          }}
-        >
-          <Text style={{ fontSize: 12, color: '#856404' }}>
-            ⚠️ Approaching token limit. Consider starting a new chat soon.
-          </Text>
-        </View>
-      )}
-
-      {isLimitExceeded && (
-        <View
-          style={{
-            backgroundColor: '#F8D7DA',
-            borderLeftWidth: 4,
-            borderLeftColor: '#FF6B6B',
-            padding: 10,
-            borderRadius: 4,
-          }}
-        >
-          <Text style={{ fontSize: 12, color: '#721C24', fontWeight: '600' }}>
-            🛑 Token limit reached. Please start a new chat.
-          </Text>
-        </View>
-      )}
-    </View>
-  );
+  // Conservative estimate: divide character count by 4
+  // This accounts for punctuation, spaces, and word boundaries
+  const estimatedTokens = Math.ceil(text.length / 4);
+  
+  // Minimum 1 token per message (even if very short)
+  return Math.max(1, estimatedTokens);
 };
 
-export default TokenCounter;
+/**
+ * Calculate total tokens used in a conversation
+ * 
+ * @param messages - Array of messages with text content
+ * @returns Total token count
+ */
+export const calculateTotalTokens = (
+  messages: Array<{ content: string; tokens_used?: number }>
+): number => {
+  if (!messages || messages.length === 0) return 0;
+  
+  return messages.reduce((total, msg) => {
+    // If tokens_used is already defined (from backend), use it
+    // Otherwise estimate from content
+    const tokens = msg.tokens_used || estimateTokens(msg.content);
+    return total + tokens;
+  }, 0);
+};
+
+/**
+ * Check if adding a message would exceed token limit
+ * 
+ * @param currentTokens - Current total tokens used
+ * @param messageText - The message text to send
+ * @param maxLimit - Maximum token limit allowed
+ * @returns True if within limits, false if would exceed
+ */
+export const isWithinTokenLimit = (
+  currentTokens: number,
+  messageText: string,
+  maxLimit: number
+): boolean => {
+  const messageTokens = estimateTokens(messageText);
+  return (currentTokens + messageTokens) <= maxLimit;
+};
+
+/**
+ * Format token count for display
+ * Shows remaining tokens if within a session context
+ * 
+ * @param currentTokens - Tokens used so far
+ * @param maxTokens - Maximum allowed tokens
+ * @returns Formatted string for UI display
+ */
+export const formatTokenDisplay = (
+  currentTokens: number,
+  maxTokens: number
+): { used: string; remaining: string; percentage: number } => {
+  const remaining = Math.max(0, maxTokens - currentTokens);
+  const percentage = Math.round((currentTokens / maxTokens) * 100);
+  
+  return {
+    used: `${currentTokens}/${maxTokens}`,
+    remaining: `${remaining} left`,
+    percentage
+  };
+};
+
+/**
+ * Get color indicator based on token usage percentage
+ * Green: < 50%, Yellow: 50-80%, Red: > 80%
+ * 
+ * @param percentage - Token usage percentage
+ * @returns Color string for UI
+ */
+export const getTokenStatusColor = (percentage: number): string => {
+  if (percentage >= 80) return '#FF6B6B'; // Red - critical
+  if (percentage >= 50) return '#FFA500'; // Orange - warning
+  return '#4CAF50'; // Green - healthy
+};

@@ -1,7 +1,7 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient"; // Added Import
-import { useRouter } from "expo-router";
-import React from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL } from "../../constants/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { getToken } from "../../utils/tokenStorage";
 
 // --- Theme Constants ---
 const Colors = {
@@ -87,15 +88,56 @@ const SettingsCard: React.FC<SettingsSectionProps> = ({
 // --- Main Screen ---
 const SettingsScreen = () => {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const [latestProfile, setLatestProfile] = useState<any | null>(null);
+
+  const fetchLatestProfile = useCallback(async () => {
+    try {
+      const authToken = token ?? (await getToken());
+      if (!authToken) {
+        setLatestProfile(null);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/profile/me`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLatestProfile(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch latest profile in settings:", error);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchLatestProfile();
+    }, [fetchLatestProfile]),
+  );
+
+  const profileSource = latestProfile ?? user;
+
+  const firstName =
+    profileSource?.first_name || profileSource?.firstName || "Guest";
+  const lastName = profileSource?.last_name || profileSource?.lastName || "";
+  const fullName = `${firstName} ${lastName}`.trim();
+  const userEmail = profileSource?.email || "Sign in to sync data";
 
   const getProfileImageUrl = () => {
-    if (!user) return null;
-    const path = user.profile_image_path || user.profileImagePath;
+    const path =
+      profileSource?.profile_image_path || profileSource?.profileImagePath;
     if (!path) return null;
     if (path.startsWith("http")) return path;
-    return `${API_URL}/${path.replace(/\\/g, "/")}`;
+    const normalizedPath = path.replace(/\\/g, "/").replace(/^\/+/, "");
+    return `${API_URL}/${normalizedPath}`;
   };
 
   const profileImageUrl = getProfileImageUrl();
@@ -169,17 +211,9 @@ const SettingsScreen = () => {
               </View>
               <View style={styles.profileTexts}>
                 <Text style={styles.profileName}>
-                  {user ? `${user.first_name} ${user.last_name}` : "Guest User"}
+                  {fullName || "Guest User"}
                 </Text>
-                <Text style={styles.profileEmail}>
-                  {user ? user.email : "Sign in to sync data"}
-                </Text>
-                <TouchableOpacity
-                  style={styles.editProfileButton}
-                  onPress={() => router.back()}
-                >
-                  <Text style={styles.editProfileText}>Edit Profile</Text>
-                </TouchableOpacity>
+                <Text style={styles.profileEmail}>{userEmail}</Text>
               </View>
             </View>
           </View>
@@ -326,18 +360,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textGrey,
     marginBottom: 8,
-  },
-  editProfileButton: {
-    alignSelf: "flex-start",
-    backgroundColor: Colors.primaryLight,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-  },
-  editProfileText: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontWeight: "600",
   },
 
   // Settings Section Styles
