@@ -20,6 +20,8 @@ import {
 
 // Import your Auth Context hook
 import { useAuth } from '../../contexts/AuthContext';
+// Import your API constant
+import { API_URL } from '../../constants/api'; // <--- ADDED API_URL
 
 const DISEASE_LIBRARY: Record<string, any> = {
   "NO SKIN DISEASE PRESENT": {
@@ -239,7 +241,8 @@ export default function DiagnosisReportScreen() {
           type: 'image/jpeg',
         } as any);
 
-        const uploadResponse = await fetch('http://192.168.100.4:8080/api/upload-scan', {
+        // --- UPDATED: Replaced hardcoded IP with API_URL ---
+        const uploadResponse = await fetch(`${API_URL}/api/upload-scan`, {
           method: 'POST',
           body: formData,
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -263,7 +266,8 @@ export default function DiagnosisReportScreen() {
           imageUri: permanentImageUrl 
         };
 
-        const saveResponse = await fetch('http://192.168.100.4:8080/api/save-diagnosis', {
+        // --- UPDATED: Replaced hardcoded IP with API_URL ---
+        const saveResponse = await fetch(`${API_URL}/api/save-diagnosis`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -308,12 +312,9 @@ export default function DiagnosisReportScreen() {
       let imageSrc = '';
       let targetUri = imageUri as string;
 
-      // 1. If the URI is a relative path from your backend, make it a full URL
-      if (targetUri.startsWith('/uploads/')) {
-        targetUri = `http://192.168.100.4:8080${targetUri}`;
-      }
+      // --- DELETED: The block checking for '/uploads/' was removed here ---
 
-      // 2. Check if the URI is a network URL (http:// or https://)
+      // 1. Check if the URI is a network URL (http:// or https://)
       if (targetUri.startsWith('http')) {
         // Download the remote image to the device's temporary cache first
         const tempFileUri = `${FileSystem.cacheDirectory}temp_pdf_image.jpg`;
@@ -323,7 +324,7 @@ export default function DiagnosisReportScreen() {
         const base64Image = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
         imageSrc = `data:image/jpeg;base64,${base64Image}`;
       } else {
-        // 3. It's already a local device file (file://... from the camera)
+        // 2. It's already a local device file (file://... from the camera)
         const base64Image = await FileSystem.readAsStringAsync(targetUri, { encoding: 'base64' });
         imageSrc = `data:image/jpeg;base64,${base64Image}`;
       }

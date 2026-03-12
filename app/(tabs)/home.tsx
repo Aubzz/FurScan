@@ -17,8 +17,8 @@ import {
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-
-
+// --- ADDED: Import API_URL ---
+import { API_URL } from '../../constants/api';
 
 interface Scan {
   id: string;
@@ -44,7 +44,7 @@ const Colors = {
   shadow: '#000',
 };
 
-const JS_BACKEND_URL = 'http://192.168.100.4:8080';
+// --- REMOVED: Hardcoded JS_BACKEND_URL ---
 
 const StartScreen = () => {
   const { user } = useAuth();
@@ -64,7 +64,8 @@ const StartScreen = () => {
 
     try {
       const fullName = `${user.firstName || user.first_name} ${user.lastName || user.last_name}`;
-      const response = await fetch(`${JS_BACKEND_URL}/api/get-history/${encodeURIComponent(fullName)}`); 
+      // --- UPDATED: Use API_URL ---
+      const response = await fetch(`${API_URL}/api/get-history/${encodeURIComponent(fullName)}`); 
       const data = await response.json();
 
       if (data.success) {
@@ -106,7 +107,8 @@ const StartScreen = () => {
 
   const deleteScan = async (scanId: string) => {
     try {
-      const response = await fetch(`${JS_BACKEND_URL}/api/delete-scan/${scanId}`, {
+      // --- UPDATED: Use API_URL ---
+      const response = await fetch(`${API_URL}/api/delete-scan/${scanId}`, {
         method: 'DELETE',
       });
       const data = await response.json();
@@ -130,11 +132,13 @@ const StartScreen = () => {
     }, [user])
   );
 
+  // --- UPDATED: Simplified Image URL Logic for Supabase ---
   const getProfileImageUrl = () => {
     const path = user?.profileImagePath || user?.profile_image_path;
     if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${JS_BACKEND_URL}/${path.replace(/\\/g, '/')}`;
+    
+    // Supabase returns a full URL, so we just return it directly.
+    return path; 
   };
 
   const profileImageUrl = getProfileImageUrl();
@@ -234,6 +238,7 @@ const StartScreen = () => {
                   >
                     <View style={styles.historyListItemLeft}>
                        <View style={styles.historyIconWrapper}>
+                         {/* Scan Images also come as full Supabase URLs now, so this works natively! */}
                          {scan.image_uri ? (
                            <Image source={{ uri: scan.image_uri }} style={styles.historyScanImage} />
                          ) : (

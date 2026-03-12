@@ -188,9 +188,10 @@ const ProfileScreen = () => {
 
   const getProfileImageUrl = () => {
     if (!profile?.profile_image_path) return null;
-    const path = profile.profile_image_path;
-    if (path.startsWith("http")) return path;
-    return `${API_URL}/${path.replace(/\\/g, "/")}`;
+    
+    // The profile_image_path coming from Supabase is already a complete, 
+    // formatted URL, so we can just return it directly!
+    return profile.profile_image_path;
   };
 
   if (loading)

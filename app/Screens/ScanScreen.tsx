@@ -48,7 +48,7 @@ export default function ScanScreen() {
   }, [isProcessing]);
 
 // It must look exactly like this:
-const BACKEND_URL = 'http://192.168.100.4:8000/predict';
+const BACKEND_URL = 'http://172.16.19.152:8000/predict';
   const uploadToModel = async (uri: string) => {
     setIsProcessing(true);
     try {

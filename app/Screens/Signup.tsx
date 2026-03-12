@@ -183,20 +183,25 @@ const SignupScreen = () => {
       const signupApiUrl = `${API_URL}/api/auth/signup`;
       const formData = new FormData();
 
-      formData.append('firstName', firstName);
-      formData.append('lastName', lastName);
+      // CHANGE: Sending as snake_case to match standard backend expectations
+      formData.append('first_name', firstName);
+      formData.append('last_name', lastName);
       formData.append('email', email);
-      formData.append('mobileNumber', mobileNumber);
+      formData.append('mobile_number', mobileNumber);
       formData.append('password', password);
-      formData.append('securityQuestion', securityQuestion);
-      formData.append('securityAnswer', securityAnswer);
+      formData.append('security_question', securityQuestion);
+      formData.append('security_answer', securityAnswer);
 
       if (profileImage) {
         const filename = profileImage.split('/').pop() || 'image.jpg';
         const match = /\.(\w+)$/.exec(filename!);
-        const type = match ? `image/${match[1]}` : `image`;
+        const type = match ? `image/${match[1]}` : `image/jpeg`;
+        
+        // FIX: Ensure URI is correctly formatted for multipart upload on both platforms
+        const cleanUri = Platform.OS === 'ios' ? profileImage.replace('file://', '') : profileImage;
+
         formData.append('profileImage', {
-          uri: profileImage,
+          uri: cleanUri,
           name: filename,
           type,
         } as any);
@@ -204,21 +209,26 @@ const SignupScreen = () => {
 
       try {
         const response = await axios.post(signupApiUrl, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
+          },
         });
 
         if (response.status === 201 && response.data.token) {
+          Alert.alert('Success', 'Account created successfully!');
           login(response.data.user, response.data.token);
         } else {
           throw new Error('Signup successful, but no token received.');
         }
       } catch (error: any) {
         console.error(
-          'Signup Error:',
+          'Signup Error Details:',
           error.response ? error.response.data : error.message
         );
         const errorMessage =
           error.response?.data?.msg ||
+          error.response?.data?.message ||
           'An unknown error occurred. Please try again.';
         Alert.alert('Signup Failed', errorMessage);
       }
@@ -333,21 +343,20 @@ const SignupScreen = () => {
           {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
 
           <FormLabel label="Security Question" />
-          {/* FIX: Picker Container visibility and overlap fix */}
           <View style={styles.pickerContainer}>
             <Picker 
                 selectedValue={securityQuestion} 
                 onValueChange={(itemValue) => setSecurityQuestion(itemValue)} 
                 style={styles.picker}
                 dropdownIconColor={Colors.primaryOrange}
-                mode="dropdown" // Android dropdown is more reliable
+                mode="dropdown"
             >
               {securityQuestions.map((q, i) => (
                 <Picker.Item 
                   key={i} 
                   label={q} 
                   value={q} 
-                  color={Colors.textPrimary} // Forces text color for visibility
+                  color={Colors.textPrimary}
                 />
               ))}
             </Picker>
@@ -508,7 +517,6 @@ const styles = StyleSheet.create({
   passwordInput: { flex: 1, padding: 15, fontFamily: 'Poppins-Regular', fontSize: 16 },
   eyeIcon: { paddingHorizontal: 15 },
   
-  // FIXED PICKER STYLES
   pickerContainer: { 
     backgroundColor: Colors.white, 
     borderWidth: 1, 
@@ -522,7 +530,7 @@ const styles = StyleSheet.create({
   picker: { 
     height: Platform.OS === 'ios' ? 150 : 60, 
     width: '100%',
-    color: Colors.textPrimary, // Forces text color for visibility
+    color: Colors.textPrimary,
   },
 
   checkboxContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 30 },

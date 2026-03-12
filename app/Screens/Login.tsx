@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 // --- Constants ---
@@ -28,10 +29,7 @@ const Colors = {
   white: '#FFFFFF',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://192.168.100.4:8080', 
-});
+
 
 const LoginScreen = () => {
   const router = useRouter();

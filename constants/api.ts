@@ -4,15 +4,13 @@ import { Platform } from 'react-native';
 
 /**
  * The single source of truth for the backend API URL.
- * Change the IP address here, and it will update across the entire app.
+ * Now pointing to the live Render production server.
  */
 export const API_URL = Platform.select({
-  // This is used when running the app in a web browser
-  web: 'http://localhost:8080',
-  //web:'https://furemedy-backend.onrender.com',
+  // Use the Render URL for web as well to ensure consistency
+  web: 'https://furemedy-backend-joob.onrender.com',
 
   // This is for the mobile app (Expo Go). 
-  // THIS IS THE ONLY LINE YOU'LL EVER NEED TO CHANGE.
-  default: 'http://192.168.100.4:8080', // IMPORTANT: Replace with your computer's IP
-  //default: 'https://furemedy-backend.onrender.com',
+  // Pointing to your live Render backend instead of a local IP.
+  default: 'https://furemedy-backend-joob.onrender.com',
 });

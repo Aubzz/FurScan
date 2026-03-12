@@ -44,3 +44,4 @@ app-example
 
 # Environment variables
 .env
+.vercel
