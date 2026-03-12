@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api'; // Adjust the ../ path to match your folder structure
 
 const Colors = {
   background: '#FFFFFF',
@@ -26,10 +27,7 @@ const Colors = {
   error: '#D32F2F',
 };
 
-const API_URL = Platform.select({
-  web: 'http://localhost:8080',
-  default: 'http://192.168.1.49:8080', // Replace with your IP
-});
+
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60; // 60 seconds
