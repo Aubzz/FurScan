@@ -3,10 +3,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -40,6 +41,7 @@ const SetNewPasswordScreen = () => {
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   const handleSetNewPassword = async () => {
@@ -74,9 +76,7 @@ const SetNewPasswordScreen = () => {
         throw new Error(data.msg || 'Failed to reset password.');
       }
 
-      Alert.alert('Success', 'Your password has been reset. Please log in.', [
-        { text: 'OK', onPress: () => router.replace('/Screens/Login') }
-      ]);
+      setShowSuccessModal(true);
 
     } catch (err: any) {
       setError(err.message);
@@ -149,6 +149,31 @@ const SetNewPasswordScreen = () => {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        transparent
+        visible={showSuccessModal}
+        animationType="fade"
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowSuccessModal(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Password Updated</Text>
+            <Text style={styles.modalMessage}>
+              Your password has been changed successfully.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setShowSuccessModal(false);
+                router.replace('/Screens/Login');
+              }}
+            >
+              <Text style={styles.modalButtonText}>Back to Login</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -239,6 +264,48 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
     marginBottom: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 22,
+    color: Colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    width: '100%',
+    backgroundColor: Colors.primaryOrange,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 16,
+    color: Colors.white,
   },
 });
 
