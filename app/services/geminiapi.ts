@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import {
   buildRagContext,
   getRagRuntimeStatus,
@@ -16,7 +16,9 @@ const GEMINI_MODEL_PATH =
     : `models/${GEMINI_MODEL}`;
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL_PATH}:generateContent`;
 const OUT_OF_SCOPE_REPLY =
-  "I'm here to help with questions about dog skin diseases such as ringworm, dermatitis, and mange. If you have concerns about your dog's skin condition, feel free to ask and I'll do my best to help.";
+  "I can assess for dog skin diseases only. I'm here to help with conditions like ringworm, dermatitis, mange, and other skin-related issues. Please ask about your dog's skin concerns!";
+const UNKNOWN_DOG_DISEASE_REPLY =
+  "Sorry, I don't have information about that specific dog disease in my knowledge base. We have limited chat replies. If you'd like help with this condition, please send a message through our app support. Thank you!";
 const MAX_RETRIES = 1;
 const GENERATION_RATE_LIMIT_COOLDOWN_SECONDS = Number.parseInt(
   process.env.EXPO_PUBLIC_RATE_LIMIT_COOLDOWN_SECONDS || "180",
@@ -39,6 +41,7 @@ Supported conditions:
 - Sarcoptic mange
 - Demodectic mange
 - Hypersensitivity dermatitis
+- Alopecia
 
 Rules:
 - Use retrieved veterinary knowledge as factual anchor.
@@ -123,12 +126,23 @@ const DOMAIN_TOKENS = [
   "redness",
   "scaling",
   "bald",
+  "alopecia",
+  "sarcoptic_mange",
+  "demodectic_mange",
+  "bacterial_skin_infection",
+  "yeast_infection",
+  "flea_allergy_dermatitis",
+  "hotspot",
+  "seborrhea",
+  "ticks_infestation",
+  "lice_infestation",
   "ringworm",
   "fungal",
   "fungus",
   "dermatitis",
   "mange",
   "sarcoptic",
+  "fungal_infection",
   "demodectic",
   "demodex",
   "hypersensitivity",
@@ -262,9 +276,22 @@ const normalizeForSemantics = (value: string): string => {
 };
 
 const isDogSkinRelated = (text: string): boolean =>
-  /\b(dog|dogs|puppy|puppies|pet|canine|skin|itch|itching|itchy|rash|rashes|lesion|lesions|hair\s*loss|hairloss|redness|scaling|bald|ring\s*worm|ringworm|fungal|fungus|dermatitis|mange|sarcoptic|demodectic|demodex|hypersensitivity|allergy|allergic|scratching|affected\s*area|affected\s*areas)\b/i.test(
+  /\b(dog|dogs|puppy|puppies|pet|canine|skin|itch|itching|itchy|rash|rashes|lesion|lesions|hair\s*loss|hairloss|redness|scaling|bald|alopecia|ring\s*worm|ringworm|fungal|fungus|dermatitis|mange|sarcoptic|demodectic|demodex|hypersensitivity|allergy|allergic|scratching|affected\s*area|affected\s*areas)\b/i.test(
     text,
   );
+const isDogRelated = (text: string): boolean =>
+  /\b(dog|dogs|puppy|puppies|pet|canine)\b/i.test(text);
+const isMentioningDiseaseOrCondition = (text: string): boolean =>
+  /\b(disease|condition|illness|infection|problem|issue|complaint|disorder)\b/i.test(text);
+const isUnknownDogDisease = (text: string): boolean => {
+  if (!isDogRelated(text)) return false;
+  if (!isMentioningDiseaseOrCondition(text) && !/my\s+(dog|puppy|pet)/i.test(text)) return false;
+  const normalized = normalizeForSemantics(text);
+  const isDogSkin = isDogSkinRelated(text);
+  if (isDogSkin) return false;
+  const looksLikeDiseaseQuestion = /\b(what|is|has|got|have|does|do|my)\b.*\b(disease|condition|illness|infection|problem)\b/i.test(text);
+  return looksLikeDiseaseQuestion || isDogRelated(text);
+};
 const isFollowUpQuestion = (text: string): boolean =>
   /\b(it|that|this|these|those|condition|disease|infection|symptom|symptoms|cause|causes|treat|treatment|prevent|prevention|contagious|serious|curable|home care|next step|what about)\b/i.test(
     text,
@@ -294,6 +321,10 @@ const isCancelAssessmentIntent = (text: string): boolean =>
   /\b(cancel assessment|stop assessment|skip assessment|no assessment)\b/i.test(
     text,
   );
+const isClosingAcknowledgment = (text: string): boolean =>
+  /\b(thank|thanks|thankyou|thank you|okay|ok|got it|gotit|got it|understood|u got it|nice|good|appreciate|great)\b/i.test(text) &&
+  text.length < 50 &&
+  !/\?|question|problem|help|what|why|how|need|issue|concerned/i.test(text);
 
 const normalizeYesNo = (value: string): string => {
   const compact = normalize(value).replace(/[^a-z]/g, "");
@@ -409,6 +440,10 @@ const buildFallbackResponse = (
   ].join("\n\n");
 };
 
+const formatBulletPoints = (text: string): string => {
+  return text.replace(/^\*\s+/gm, "• ");
+};
+
 const enforceStructuredOutput = (text: string, retrieved: RetrievedChunk[]): string => {
   const trimmed = text.trim();
   if (trimmed === OUT_OF_SCOPE_REPLY) return OUT_OF_SCOPE_REPLY;
@@ -417,11 +452,12 @@ const enforceStructuredOutput = (text: string, retrieved: RetrievedChunk[]): str
     return buildFallbackResponse(retrieved);
   }
 
-  if (!new RegExp(VET_DISCLAIMER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(trimmed)) {
-    return `${trimmed}\n\n${VET_DISCLAIMER}`;
+  const formatted = formatBulletPoints(trimmed);
+  if (!new RegExp(VET_DISCLAIMER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(formatted)) {
+    return `${formatted}\n\n${VET_DISCLAIMER}`;
   }
 
-  return trimmed;
+  return formatted;
 };
 
 const ensureRagInitialized = async () => {
@@ -449,8 +485,15 @@ export const sendMessage = async (
     return `Let's restart the skin assessment.\n${SYMPTOM_QUESTIONS.dogAge}`;
   }
 
+  if (isClosingAcknowledgment(userMessage) && conversationHistory.length > 0) {
+    return "You're welcome! Feel free to reach out anytime you have concerns about your dog's skin. Take care! 🐾";
+  }
+
   const inSymptomFlow = symptomFlowStarted || pendingSymptomField !== null;
   if (!inSymptomFlow && !isConversationalSkinQuery(semanticUserMessage, context)) {
+    if (isUnknownDogDisease(userMessage)) {
+      return UNKNOWN_DOG_DISEASE_REPLY;
+    }
     return OUT_OF_SCOPE_REPLY;
   }
 
@@ -546,7 +589,7 @@ export const sendMessage = async (
             generationConfig: {
               temperature: 0.3,
               topP: 0.8,
-              maxOutputTokens: 500,
+              maxOutputTokens: 5000,
             },
           },
           {

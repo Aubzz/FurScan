@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ChatInput from "../../components/ChatInput";
 import ChatMessage from "../../components/ChatMessage";
 import ChatSidebar from "../../components/ChatSidebar";
+import ChatWelcome from "../../components/ChatWelcome";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   addChatMessage,
@@ -48,27 +49,6 @@ import {
 } from "../services/geminiapi";
 import { estimateTokens } from "../services/tokenCounter";
 
-const INITIAL_CHATBOT_MESSAGE = `Hello! I'm **FurScan Assistant** 🐶
-
-I’m here to help answer questions about **common skin diseases in dogs**, including:
-
-• Fungal Infection
-• Ringworm
-• Dermatitis
-• Sarcoptic Mange
-• Demodectic Mange
-• Hypersensitivity Dermatitis
-
-You can ask about symptoms, possible causes, treatment options, or prevention tips.
-
-Example questions you can try:
-• "What are the symptoms of ringworm in dogs?"
-• "What causes sarcoptic mange?"
-• "Why is my dog scratching constantly?"
-
-If you already analyzed an image using **FurScan**, you can also ask questions about the result.
-
-How can I help with your dog's skin condition today?`;
 
 // ===== TYPING ANIMATION COMPONENT =====
 
@@ -502,25 +482,13 @@ export default function ChatbotScreen() {
   // Determine layout based on screen size
   const showPersistentSidebar = !isMobile && sessions.length > 0;
   const usedTokens = currentSession?.total_tokens_used ?? 0;
-  const maxTokens = currentSession?.max_token_limit ?? 1000;
+  const maxTokens = currentSession?.max_token_limit ?? 5000;
   const tokenPercentage = Math.min(
     Math.round((usedTokens / Math.max(maxTokens, 1)) * 100),
     100,
   );
   const remainingTokens = Math.max(maxTokens - usedTokens, 0);
-  const displayedMessages: ChatMessageType[] =
-    messages.length === 0 && currentSession
-      ? [
-          {
-            id: -1,
-            session_id: currentSession.id,
-            role: "assistant",
-            content: INITIAL_CHATBOT_MESSAGE,
-            tokens_used: 0,
-            created_at: new Date().toISOString(),
-          },
-        ]
-      : messages;
+  const displayedMessages: ChatMessageType[] = messages;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -553,8 +521,8 @@ export default function ChatbotScreen() {
             {/* Header */}
             <View
               style={{
-                paddingTop: insets.top + 10, // Added inset.top to account for the notch safely
-                paddingBottom: 10,
+                paddingTop: insets.top + 12,
+                paddingBottom: 12,
                 paddingHorizontal: 16,
                 flexDirection: "row",
                 alignItems: "center",
@@ -565,68 +533,65 @@ export default function ChatbotScreen() {
                 minHeight: 64 + insets.top,
               }}
             >
+              {/* Back Button */}
               <TouchableOpacity
                 onPress={() => router.back()}
-                activeOpacity={0.75}
+                activeOpacity={0.6}
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: 20,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: "#FFF3EA",
-                  borderWidth: 1,
-                  borderColor: "#F8D9C3",
                 }}
               >
-                <Ionicons name="chevron-back" size={22} color="#F7924A" />
+                <Ionicons name="chevron-back" size={24} color="#F7924A" />
               </TouchableOpacity>
 
-              <View style={{ flex: 1, marginHorizontal: 12 }}>
+              <View style={{ flex: 1, marginHorizontal: 16, justifyContent: "center", alignItems: "center" }}>
                 <Text
                   style={{
-                    fontSize: 20,
-                    fontWeight: "700",
+                    fontSize: 22,
+                    fontWeight: "600",
                     color: "#1A1A1A",
                     letterSpacing: -0.3,
+                    textAlign: "center",
                   }}
                 >
-                  <Text style={{ color: "#F7924A", fontWeight: "800" }}>
+                  <Text style={{ color: "#F7924A", fontWeight: "700" }}>
                     FurScan AI
                   </Text>{" "}
-                  <Text style={{ color: "#1A1A1A", fontWeight: "700" }}>
+                  <Text style={{ color: "#1A1A1A", fontWeight: "600" }}>
                     Bot
                   </Text>
                 </Text>
                 <Text
                   style={{
-                    fontSize: 13,
-                    fontWeight: "500",
-                    color: "#757575",
-                    marginTop: 2,
+                    fontSize: 12,
+                    fontWeight: "400",
+                    color: "#888888",
+                    marginTop: 3,
+                    textAlign: "center",
                   }}
                 >
                   Ask anything about your pet’s skin health
                 </Text>
               </View>
 
+              {/* Menu Button (Mobile) / Spacer (Desktop) */}
               {isMobile && (
                 <TouchableOpacity
                   onPress={() => setSidebarVisible(true)}
                   disabled={loading}
+                  activeOpacity={0.6}
                   style={{
                     opacity: loading ? 0.5 : 1,
                     width: 40,
                     height: 40,
-                    borderRadius: 20,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "#FFF3EA",
-                    borderWidth: 1,
-                    borderColor: "#F8D9C3",
                   }}
                 >
-                  <Ionicons name="menu" size={20} color="#F7924A" />
+                  <Ionicons name="menu" size={24} color="#F7924A" />
                 </TouchableOpacity>
               )}
               {!isMobile && <View style={{ width: 40 }} />}
@@ -706,40 +671,44 @@ export default function ChatbotScreen() {
               </View>
             ) : (
               <>
-                {/* Messages List */}
-                <FlatList
-                  ref={flatListRef}
-                  data={displayedMessages}
-                  keyExtractor={(_, index) => index.toString()}
-                  style={{ flex: 1, paddingHorizontal: 14 }}
-                  contentContainerStyle={{ paddingBottom: 20, paddingTop: 6 }}
-                  onContentSizeChange={() =>
-                    flatListRef.current?.scrollToEnd({ animated: true })
-                  }
-                  renderItem={({ item }) => (
-                    <ChatMessage
-                      role={item.role}
-                      text={item.content}
-                      createdAt={item.created_at}
-                      onOptionPress={sendChatMessage}
-                    />
-                  )}
-                  ListFooterComponent={
-                    loading ? (
-                      <View
-                        style={{
-                          alignSelf: "flex-start",
-                          backgroundColor: "#F79C4A",
-                          padding: 10,
-                          borderRadius: 15,
-                          marginVertical: 10,
-                        }}
-                      >
-                        <TypingDots />
-                      </View>
-                    ) : null
-                  }
-                />
+                {/* Welcome Screen or Messages List */}
+                {messages.length === 0 ? (
+                  <ChatWelcome onCardPress={sendChatMessage} />
+                ) : (
+                  <FlatList
+                    ref={flatListRef}
+                    data={displayedMessages}
+                    keyExtractor={(_, index) => index.toString()}
+                    style={{ flex: 1, paddingHorizontal: 14 }}
+                    contentContainerStyle={{ paddingBottom: 20, paddingTop: 6 }}
+                    onContentSizeChange={() =>
+                      flatListRef.current?.scrollToEnd({ animated: true })
+                    }
+                    renderItem={({ item }) => (
+                      <ChatMessage
+                        role={item.role}
+                        text={item.content}
+                        createdAt={item.created_at}
+                        onOptionPress={sendChatMessage}
+                      />
+                    )}
+                    ListFooterComponent={
+                      loading ? (
+                        <View
+                          style={{
+                            alignSelf: "flex-start",
+                            backgroundColor: "#F79C4A",
+                            padding: 10,
+                            borderRadius: 15,
+                            marginVertical: 10,
+                          }}
+                        >
+                          <TypingDots />
+                        </View>
+                      ) : null
+                    }
+                  />
+                )}
               </>
             )}
 
@@ -797,3 +766,4 @@ export default function ChatbotScreen() {
     </View>
   );
 }
+

@@ -83,16 +83,48 @@ const KNOWLEDGE_FILES: KnowledgeFile[] = [
 const KNOWLEDGE_DOCS: Record<string, string> = {
   fungal_infection:
     "Disease: Fungal Infection\nOverview: Fungal skin disease may cause scaling, redness, patchy hair loss, and itching.\nDiagnosis: Veterinary exam with skin tests.\nTreatment: Keep skin clean and dry and follow veterinary antifungal management.",
+
   ringworm:
     "Disease: Dermatophytosis (Ringworm)\nOverview: Contagious fungal disease with circular bald patches and scaling.\nDiagnosis: Vet culture or microscopy.\nTreatment: Hygiene, disinfection, and veterinary antifungal treatment.",
+
   dermatitis:
     "Disease: Dermatitis\nOverview: Inflammatory skin condition with redness, itching, odor, and moist lesions.\nDiagnosis: Vet skin exam and cause identification.\nTreatment: Remove triggers and follow veterinary plan.",
+
   sarcoptic_mange:
     "Disease: Sarcoptic Mange\nOverview: Highly itchy and contagious mite infestation.\nDiagnosis: Vet skin scraping and clinical assessment.\nTreatment: Prompt veterinary parasite control and isolation precautions.",
+
   demodectic_mange:
     "Disease: Demodectic Mange\nOverview: Demodex mite overgrowth causing patchy hair loss and irritation.\nDiagnosis: Deep skin scraping.\nTreatment: Veterinary-directed mite management.",
+
   hypersensitivity_dermatitis:
     "Disease: Hypersensitivity Dermatitis\nOverview: Allergy-related skin inflammation with itching and redness.\nDiagnosis: Vet allergy workup.\nTreatment: Trigger avoidance and veterinary care.",
+
+  alopecia:
+    "Disease: Alopecia\nOverview: Hair loss that may be patchy or widespread, caused by allergies, parasites, hormonal imbalance, or genetics.\nDiagnosis: Vet examination, skin tests, and possible blood tests.\nTreatment: Depends on underlying cause; may include medication, diet changes, or parasite control.",
+
+  bacterial_skin_infection:
+    "Disease: Pyoderma (Bacterial Skin Infection)\nOverview: Common bacterial infection causing red bumps, pus-filled lesions, odor, and itching.\nDiagnosis: Vet skin cytology or culture.\nTreatment: Antibiotics, medicated shampoos, and hygiene management.",
+
+  yeast_infection:
+    "Disease: Yeast Infection (Malassezia Dermatitis)\nOverview: Overgrowth of yeast causing greasy skin, bad odor, redness, and itching.\nDiagnosis: Skin cytology.\nTreatment: Antifungal medications and medicated baths.",
+
+  flea_allergy_dermatitis:
+    "Disease: Flea Allergy Dermatitis\nOverview: Allergic reaction to flea bites causing intense itching, redness, and hair loss.\nDiagnosis: Presence of fleas and clinical signs.\nTreatment: Strict flea control and anti-itch medications.",
+
+  hot_spots:
+    "Disease: Acute Moist Dermatitis (Hot Spots)\nOverview: Rapidly developing red, moist, and painful skin lesions due to licking or scratching.\nDiagnosis: Physical examination.\nTreatment: Cleaning, topical treatment, and preventing further irritation.",
+
+  seborrhea:
+    "Disease: Seborrhea\nOverview: Skin disorder causing flaky dandruff or oily, greasy coat with odor.\nDiagnosis: Vet evaluation to determine primary or secondary cause.\nTreatment: Medicated shampoos and treatment of underlying condition.",
+
+  ticks_infestation:
+    "Disease: Tick Infestation\nOverview: External parasites attaching to skin, causing irritation and potential disease transmission.\nDiagnosis: Visual identification of ticks.\nTreatment: Tick removal and preventive medications.",
+
+  lice_infestation:
+    "Disease: Lice Infestation\nOverview: Small parasites causing itching, dry coat, and hair loss.\nDiagnosis: Visual inspection or microscopic exam.\nTreatment: Topical insecticides and hygiene control.",
+
+  skin_abscess:
+    "Disease: Skin Abscess\nOverview: Localized swelling filled with pus due to infection, often from wounds or bites.\nDiagnosis: Physical exam and possible drainage.\nTreatment: Drainage, antibiotics, and wound care."
 };
 
 let indexedChunks: ChunkRecord[] = [];
